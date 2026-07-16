@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "builds": [{ "src": "damas.html", "use": "@vercel/static" }],
+  "routes": [{ "src": "/", "dest": "/damas.html" }]
+}
