@@ -1135,6 +1135,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       if(!code || code.length !== 6){ showToast('Error','Ingresa un código de 6 caracteres','⚠️'); return; }
       myOnlineName = nameInput.value.trim() || 'Jugador';
       nameInput.style.display = 'none';
+      socket.emit('join_room', { code, name: myOnlineName }, (res) => {
         if(res.error){ showToast('Error',res.error,'⚠️'); return; }
         onlineRoomCode = code;
         roomCodeInput.style.display = 'none';
