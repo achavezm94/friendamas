@@ -14,7 +14,7 @@ app.get('/', (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: ['http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:5500', 'http://127.0.0.1:5500', 'null', '*'], methods: ['GET', 'POST'], credentials: true }
+  cors: { origin: ['http://localhost:3001', 'https://friendamas.vercel.app', 'http://localhost:5500', 'http://127.0.0.1:5500', 'null', '*'], methods: ['GET', 'POST'], credentials: true }
 });
 
 const rooms = {};
