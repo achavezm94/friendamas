@@ -345,6 +345,12 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
             <div class="hint">Comparte este código con tu oponente</div>
           </div>
           <button class="btn-st" id="btnStartOnline" style="display:none">Esperando oponente...</button>
+          <div id="reconnectSection" style="display:none;flex-direction:column;gap:8px;padding:8px 0;border-top:1px solid var(--border);margin-top:4px">
+            <div style="font-size:12px;color:var(--gold);font-weight:600;text-align:center">¿Ya tienes una sala?</div>
+            <input type="text" id="reconnectCodeInput" class="code-input" placeholder="Código de sala" maxlength="6">
+            <input type="text" id="reconnectNameInput" class="name-input" placeholder="Tu nombre" maxlength="16">
+            <button class="btn-sbg" id="btnReconnect">Reconectar</button>
+          </div>
         </div>
         <button class="btn-st" id="btnStart">Comenzar Partida</button>
       </div>
@@ -511,6 +517,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const chatSend = document.getElementById('chatSend');
   const chatPlaceholder = document.getElementById('chatPlaceholder');
   const chatInputArea = document.getElementById('chatInputArea');
+  const reconnectSection = document.getElementById('reconnectSection');
+  const reconnectCodeInput = document.getElementById('reconnectCodeInput');
+  const reconnectNameInput = document.getElementById('reconnectNameInput');
+  const btnReconnect = document.getElementById('btnReconnect');
 
   // Socket.io
   const SERVER_URL = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:')
@@ -793,7 +803,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         if(res.captured.length){if(turn===GOLD)for(const cp of res.captured)playerCaptured.push(cp);else for(const cp of res.captured)opponentCaptured.push(cp);}
         board=res.board;lastMove={from:{r:fr,c:fc},to:{r,c}};moveCount++;
         // Send move to server if online
-        if(gameModeOnline && socket) socket.emit('make_move', { fromRow: fr, fromCol: fc, toRow: r, toCol: c, captures: mv.captures || [] });
+        if(gameModeOnline && socket) socket.emit('make_move', { fromRow: fr, fromCol: fc, toRow: r, toCol: c, captures: mv.captures || [], board_state: JSON.stringify(board), next_turn: turn === GOLD ? 'BLACK' : 'GOLD', gold_captured: JSON.stringify(playerCaptured), black_captured: JSON.stringify(opponentCaptured) });
         const opp=turn===GOLD?BLACK:GOLD;
         if(!hm(board,opp)||cp(board,opp)===0){
           gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();
@@ -896,6 +906,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     nameInput.value='Jugador';
     document.getElementById('onlineBtnRow').style.display='flex';
     btnStartOnline.style.display='none';
+    reconnectSection.style.display=gameMode==='online'?'flex':'none';
+    reconnectCodeInput.value='';
+    reconnectNameInput.value='';
     btnStart.style.display=gameMode==='online'?'none':'block';
   }
 
@@ -982,6 +995,11 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     socket.on('opponent_disconnected', () => {
       showToast('Oponente desconectado','Esperando reconexión...','⚠️');
       updateOnlineStatus('Oponente desconectado', 'yellow');
+    });
+    socket.on('opponent_reconnected', () => {
+      showToast('Oponente reconectado','¡El oponente volvió!','✅');
+      updateOnlineStatus('Conectado', 'green');
+      stopT(); startT();
     });
     socket.on('opponent_resigned', () => {
       gameOver = true; gameActive = false; stopT(); render();
@@ -1096,7 +1114,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         diffGroup.style.display=gameMode==='ai'?'flex':'none';
         onlineSetup.style.display=gameMode==='online'?'flex':'none';
         if(gameMode==='ai'){const r=Math.floor(Math.random()*THEMES.length);p2Color=r;applyTheme(p1Color,r);}else applyTheme(p1Color,p2Color);
-        if(gameMode==='online'){ btnStart.style.display='none'; connectSocket(); } else { btnStart.style.display='block'; }
+        if(gameMode==='online'){ btnStart.style.display='none'; reconnectSection.style.display='flex'; connectSocket(); } else { btnStart.style.display='block'; reconnectSection.style.display='none'; }
       });
     });
 
@@ -1158,6 +1176,51 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         gameModeOnline = true;
         startGame();
       }
+    });
+
+    // Reconnect
+    btnReconnect.addEventListener('click', () => {
+      const code = reconnectCodeInput.value.trim().toUpperCase();
+      const name = reconnectNameInput.value.trim();
+      if (!code || code.length !== 6 || !name) { showToast('Error', 'Ingresa código y nombre', '⚠️'); return; }
+      if (!socket || !socket.connected) { showToast('Error', 'No hay conexión al servidor', '⚠️'); return; }
+      socket.emit('reconnect_room', { code, name }, (res) => {
+        if (res.error) { showToast('Error', res.error, '⚠️'); return; }
+        myOnlineName = name;
+        onlineRoomCode = code;
+        const me = res.players.find(p => p.id === socket.id || p.name === name);
+        if (me) myOnlineColor = me.color;
+        const opp = res.players.find(p => p.id !== socket.id && p.name !== name);
+        if (opp) { oppName.textContent = opp.name; onlineOpponentName = opp.name; }
+        menuOv.classList.add('hide');
+        gameModeOnline = true;
+        gameActive = true;
+
+        if (res.board_state) {
+          board = JSON.parse(res.board_state);
+          playerCaptured = JSON.parse(res.gold_captured || '[]');
+          opponentCaptured = JSON.parse(res.black_captured || '[]');
+        } else {
+          board = initB();
+        }
+        turn = res.turn === 'GOLD' ? GOLD : BLACK;
+        gameOver = false; lastMove = null; selected = null; validMoves = [];
+        modeBadge.textContent = '🌐 Online';
+        myName.textContent = myOnlineName;
+        oppName.textContent = onlineOpponentName;
+        myTitle.textContent = 'Online';
+        oppTitle.textContent = myOnlineColor === 'GOLD' ? '' : 'Online';
+        playerSec = 300; opponentSec = 300;
+        stopT(); startT(); render();
+        if (myOnlineColor === 'BLACK') { disableInteraction(); mStat.textContent = 'Esperando turno del oponente'; }
+        else { enableInteraction(); mStat.textContent = 'Tu turno'; }
+        if (res.chat && res.chat.length) {
+          chatPlaceholder.style.display = 'none';
+          chatMessages.style.display = 'flex';
+          res.chat.forEach(c => addChatMessage(c.player_name, c.text));
+        }
+        showToast('Reconectado', 'Partida restaurada', '✅');
+      });
     });
 
     // Chat
