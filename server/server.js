@@ -75,6 +75,10 @@ async function dbInit() {
   console.log(`Database: ${DATABASE_URL ? `PostgreSQL (${DATABASE_URL.split('@')[1]?.split('/')[0] || 'remote'})` : 'SQLite (local)'}`);
 }
 
+function dbSql(sql) {
+  return DATABASE_URL ? sql : sql.replace(/\$\d+/g, '?');
+}
+
 async function dbExec(sql) {
   if (DATABASE_URL) {
     await db.query(sql);
@@ -84,6 +88,7 @@ async function dbExec(sql) {
 }
 
 async function dbGet(sql, params = []) {
+  sql = dbSql(sql);
   if (DATABASE_URL) {
     const result = await db.query(sql, params);
     return result.rows[0] || null;
@@ -93,6 +98,7 @@ async function dbGet(sql, params = []) {
 }
 
 async function dbAll(sql, params = []) {
+  sql = dbSql(sql);
   if (DATABASE_URL) {
     const result = await db.query(sql, params);
     return result.rows;
@@ -102,6 +108,7 @@ async function dbAll(sql, params = []) {
 }
 
 async function dbRun(sql, params = []) {
+  sql = dbSql(sql);
   if (DATABASE_URL) {
     const result = await db.query(sql, params);
     return { lastInsertRowid: result.rows[0]?.id || 0 };
@@ -113,10 +120,8 @@ async function dbRun(sql, params = []) {
 
 // ─── Queries ───
 async function createRoom(code) {
-  const id = DATABASE_URL
-    ? (await db.query('INSERT INTO rooms (code) VALUES ($1) RETURNING id', [code])).rows[0].id
-    : db.prepare('INSERT INTO rooms (code, status) VALUES (?, ?)').run(code, 'waiting').lastInsertRowid;
-  return id;
+  const row = await dbGet('INSERT INTO rooms (code) VALUES ($1) RETURNING id', [code]);
+  return row.id;
 }
 
 async function getRoom(code) {
