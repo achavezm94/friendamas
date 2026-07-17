@@ -968,9 +968,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       updateOnlineStatus('Error de conexión', 'red');
     });
     socket.on('opponent_joined', (data) => {
-      const me = data.players.find(p => p.id === socket.id);
+      const me = data.players.find(p => p.socket_id === socket.id);
       if(me) myOnlineColor = me.color;
-      const opp = data.players.find(p => p.id !== socket.id);
+      const opp = data.players.find(p => p.socket_id !== socket.id);
       if(opp){ oppName.textContent = opp.name; onlineOpponentName = opp.name; }
       oppTitle.textContent = 'Online';
       btnStartOnline.textContent = '¡Comenzar!';
@@ -981,7 +981,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       updateOnlineStatus('Oponente conectado', 'green');
     });
     socket.on('game_start', (data) => {
-      const me = data.players.find(p => p.id === socket.id);
+      const me = data.players.find(p => p.socket_id === socket.id);
       myOnlineColor = me.color;
       gameModeOnline = true;
       startGame();
@@ -1161,9 +1161,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         btnStartOnline.textContent = '¡Comenzar!';
         btnStartOnline.style.display = 'block';
         btnStartOnline.disabled = false;
-        const me = res.players.find(p => p.id === socket.id);
+        const me = res.players.find(p => p.socket_id === socket.id);
         if(me) myOnlineColor = me.color;
-        const opp = res.players.find(p => p.id !== socket.id);
+        const opp = res.players.find(p => p.socket_id !== socket.id);
         if(opp){ oppName.textContent = opp.name; onlineOpponentName = opp.name; }
         oppTitle.textContent = 'Online';
         gameModeOnline = true;
@@ -1188,9 +1188,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         if (res.error) { showToast('Error', res.error, '⚠️'); return; }
         myOnlineName = name;
         onlineRoomCode = code;
-        const me = res.players.find(p => p.id === socket.id || p.name === name);
+        const me = res.players.find(p => p.socket_id === socket.id || p.name === name);
         if (me) myOnlineColor = me.color;
-        const opp = res.players.find(p => p.id !== socket.id && p.name !== name);
+        const opp = res.players.find(p => p.socket_id !== socket.id && p.name !== name);
         if (opp) { oppName.textContent = opp.name; onlineOpponentName = opp.name; }
         menuOv.classList.add('hide');
         gameModeOnline = true;
