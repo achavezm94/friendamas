@@ -246,6 +246,7 @@ io.on('connection', (socket) => {
     socket.roomCode = code;
     socket.playerName = name;
     callback({ success: true, players: updatedPlayers, turn: 'GOLD' });
+    console.log(`[join_room] updatedPlayers:`, JSON.stringify(updatedPlayers));
     socket.to(code).emit('opponent_joined', { name, players: updatedPlayers, turn: 'GOLD' });
     console.log(`${name} se unió a sala ${code}`);
   });
