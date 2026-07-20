@@ -783,6 +783,13 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     turn = GOLD; selected = null; validMoves = []; render(); resetT();
   }
 
+  // ─── Resume AI on phone unlock ───
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && gameMode === 'ai' && gameActive && !gameOver && turn === BLACK) {
+      setTimeout(aiMove, 100);
+    }
+  });
+
   // ─── Click ───
   function hc(r,c) {
     if(gameOver||!gameActive) return;
@@ -856,7 +863,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   }
 
   // ─── Timers ───
-  function startT(){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{if(gameOver||!gameActive)return;if(turn===GOLD){playerSec--;if(playerSec<=0){playerSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Se te acabó el tiempo!','Perdiste por tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}else{opponentSec--;if(opponentSec<=0){opponentSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Ganaste por tiempo!','El oponente se quedó sin tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}updateT();},1000);}
+  function startT(){if(gameMode==='ai'||timerInt)return;timerInt=setInterval(()=>{if(gameOver||!gameActive)return;if(turn===GOLD){playerSec--;if(playerSec<=0){playerSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Se te acabó el tiempo!','Perdiste por tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}else{opponentSec--;if(opponentSec<=0){opponentSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Ganaste por tiempo!','El oponente se quedó sin tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}updateT();},1000);}
   function stopT(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
   function resetT(){if(!timerInt&&!gameOver)startT();}
   function updateT(){myTimer.textContent=`${String(Math.floor(playerSec/60)).padStart(2,'0')}:${String(playerSec%60).padStart(2,'0')}`;oppTimer.textContent=`${String(Math.floor(opponentSec/60)).padStart(2,'0')}:${String(opponentSec%60).padStart(2,'0')}`;}
@@ -924,7 +931,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     if(gameMode==='ai'){oppName.textContent='Magnus_D';oppTitle.textContent=`Grandmaster • ${difficulty==='hard'?'2400':'2200'}`;myName.textContent='You (Grandmaster)';myTitle.textContent='ELO 2150 • Rank #42';}
     else if(gameMode==='online'){myName.textContent=myOnlineName||'Jugador';myTitle.textContent='Online';oppName.textContent=onlineOpponentName;}
     else{oppName.textContent='Jugador 2';oppTitle.textContent='';myName.textContent='Jugador 1';myTitle.textContent='';}
-    if(gameMode!=='ai'){ stopT();startT(); } else { updateT(); }
+    if(gameMode!=='ai'){ myTimer.style.display=''; oppTimer.style.display=''; stopT();startT(); } else { myTimer.style.display='none'; oppTimer.style.display='none'; updateT(); }
     render();
     if(gameMode==='online'){
       if(myOnlineColor==='BLACK'){ disableInteraction(); mStat.textContent='Esperando turno del oponente'; } else { enableInteraction(); mStat.textContent='Tu turno'; }
@@ -1154,9 +1161,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       const code = roomCodeInput.value.trim().toUpperCase();
       if(!code || code.length !== 6){ showToast('Error','Ingresa un código de 6 caracteres','⚠️'); return; }
       myOnlineName = nameInput.value.trim() || 'Jugador';
-      nameInput.style.display = 'none';
       socket.emit('join_room', { code, name: myOnlineName }, (res) => {
         if(res.error){ showToast('Error',res.error,'⚠️'); return; }
+        nameInput.style.display = 'none';
         onlineRoomCode = code;
         roomCodeInput.style.display = 'none';
         document.getElementById('onlineBtnRow').style.display = 'none';
