@@ -227,7 +227,7 @@ io.on('connection', (socket) => {
     if (players.length >= 2) return callback({ error: 'Sala llena' });
 
     const existing = await findPlayer(code, name);
-    if (existing) {
+    if (existing && existing.connected === 0) {
       await updatePlayerSocket(socket.id, existing.id);
       socket.join(code);
       socket.roomCode = code;
@@ -236,6 +236,9 @@ io.on('connection', (socket) => {
       callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, reconnected: true });
       socket.to(code).emit('opponent_reconnected');
       return;
+    }
+    if (existing && existing.connected === 1) {
+      return callback({ error: 'Nombre ya en uso en esta sala' });
     }
 
     await insertPlayer(room.id, socket.id, name, 'BLACK');
