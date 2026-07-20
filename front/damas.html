@@ -968,21 +968,15 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       updateOnlineStatus('Error de conexión', 'red');
     });
     socket.on('opponent_joined', (data) => {
-      console.log('[opponent_joined] data:', JSON.stringify(data));
-      console.log('[opponent_joined] socket.id:', socket.id);
-      showToast('Debug: opponent_joined', `players: ${data?.players?.length || 0}, socket.id: ${socket.id}`, '📋');
       const me = data.players.find(p => p.socket_id === socket.id);
-      console.log('[opponent_joined] me found:', !!me, me?.color);
       if(me) myOnlineColor = me.color;
       const opp = data.players.find(p => p.socket_id !== socket.id);
-      console.log('[opponent_joined] opp found:', !!opp, opp?.name);
       if(opp){ oppName.textContent = opp.name; onlineOpponentName = opp.name; }
       oppTitle.textContent = 'Online';
       btnStartOnline.textContent = '¡Comenzar!';
       btnStartOnline.style.display = 'block';
       btnStartOnline.disabled = false;
       btnStartOnline.dataset.ready = 'true';
-      console.log('[opponent_joined] button changed to:', btnStartOnline.textContent);
       roomCodeDisplay.style.display = 'none';
       updateOnlineStatus('Oponente conectado', 'green');
     });
