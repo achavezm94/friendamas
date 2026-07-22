@@ -187,7 +187,8 @@ async function loadRoomToCache(code) {
   const room = await getRoom(code);
   if (!room) return null;
   const players = await getPlayers(room.id);
-  const entry = { room, players, code };
+  const existing = activeRooms.get(code) || {};
+  const entry = { room, players, code, themeMap: existing.themeMap || {} };
   activeRooms.set(code, entry);
   return entry;
 }
@@ -197,6 +198,8 @@ function getRoomData(code) {
   return null;
 }
 
+const THEME_COUNT = 4;
+
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -205,7 +208,7 @@ function generateCode() {
 io.on('connection', (socket) => {
   console.log('Conectado:', socket.id);
 
-  socket.on('create_room', async (playerName, callback) => {
+  socket.on('create_room', async ({ playerName, p1Color }, callback) => {
     let code;
     do { code = generateCode(); } while (await getRoom(code));
     const roomId = await createRoom(code);
@@ -215,12 +218,12 @@ io.on('connection', (socket) => {
     socket.playerName = playerName;
     const room = await getRoom(code);
     const players = await getPlayers(roomId);
-    activeRooms.set(code, { room, players, code });
-    callback({ code });
+    activeRooms.set(code, { room, players, code, themeMap: { GOLD: p1Color } });
+    callback({ code, p2Color: null });
     console.log(`Sala ${code} creada por ${playerName}`);
   });
 
-  socket.on('join_room', async ({ code, name }, callback) => {
+  socket.on('join_room', async ({ code, name, p1Color }, callback) => {
     const room = await getRoom(code);
     if (!room) return callback({ error: 'Sala no encontrada' });
     const players = await getPlayers(room.id);
@@ -233,24 +236,34 @@ io.on('connection', (socket) => {
       socket.roomCode = code;
       socket.playerName = name;
       const entry = await loadRoomToCache(code);
-      callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, reconnected: true });
-      socket.to(code).emit('opponent_reconnected');
+      const rd = getRoomData(code);
+      callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, reconnected: true, themeMap: rd?.themeMap || {} });
+      socket.to(code).emit('opponent_reconnected', { themeMap: rd?.themeMap || {} });
       return;
     }
     if (existing && existing.connected === 1) {
       return callback({ error: 'Nombre ya en uso en esta sala' });
     }
 
+    let joinerTheme = p1Color;
+    const rd = getRoomData(code);
+    if (rd && rd.themeMap && rd.themeMap.GOLD === joinerTheme) {
+      const used = [rd.themeMap.GOLD];
+      const available = Array.from({length: THEME_COUNT}, (_, i) => i).filter(i => !used.includes(i));
+      joinerTheme = available.length ? available[Math.floor(Math.random() * available.length)] : 0;
+    }
     await insertPlayer(room.id, socket.id, name, 'BLACK');
     await updateRoomStatus(code, 'playing');
     const updatedPlayers = await getPlayers(room.id);
     const entry = await loadRoomToCache(code);
+    const roomData = getRoomData(code);
+    if (roomData) { roomData.themeMap = roomData.themeMap || {}; roomData.themeMap.BLACK = joinerTheme; roomData.themeMap.GOLD = roomData.themeMap.GOLD ?? 0; activeRooms.set(code, roomData); }
     socket.join(code);
     socket.roomCode = code;
     socket.playerName = name;
-    callback({ success: true, players: updatedPlayers, turn: 'GOLD' });
+    callback({ success: true, players: updatedPlayers, turn: 'GOLD', themeMap: { GOLD: roomData?.themeMap?.GOLD ?? 0, BLACK: joinerTheme } });
     console.log(`[join_room] updatedPlayers:`, JSON.stringify(updatedPlayers));
-    socket.to(code).emit('opponent_joined', { name, players: updatedPlayers, turn: 'GOLD' });
+    socket.to(code).emit('opponent_joined', { name, players: updatedPlayers, turn: 'GOLD', themeMap: { GOLD: roomData?.themeMap?.GOLD ?? 0, BLACK: joinerTheme } });
     console.log(`${name} se unió a sala ${code}`);
   });
 
@@ -265,7 +278,8 @@ io.on('connection', (socket) => {
     socket.playerName = name;
     const moves = await getMoves(entry.room.id);
     const chat = await getChat(entry.room.id);
-    callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, moves, chat });
+    const rd = getRoomData(code);
+    callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, moves, chat, themeMap: rd?.themeMap || {} });
     console.log(`${name} reconectado a sala ${code}`);
   });
 

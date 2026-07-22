@@ -31,8 +31,8 @@
 body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:auto;overscroll-behavior:none;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:4px}
-.hdr{background:var(--surface);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;padding:6px 14px;z-index:60;flex-shrink:0;position:sticky;top:0}
-.hdr-title{font-size:clamp(14px,2.5vw,22px);font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.03em}
+.hdr{background:var(--surface);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;padding:10px 16px;z-index:60;flex-shrink:0;position:sticky;top:0;min-height:52px}
+.hdr-title{font-size:clamp(16px,3vw,24px);font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.03em}
 .hdr nav{display:none;gap:20px}
 @media(min-width:768px){.hdr nav{display:flex}}
 .hdr nav a{color:var(--text-dim);font-size:13px;font-weight:500;text-decoration:none;transition:color .2s}
@@ -45,7 +45,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .av-sm{width:28px;height:28px;border-radius:50%;overflow:hidden;border:2px solid rgba(242,202,80,0.25);flex-shrink:0}
 .av-sm img{width:100%;height:100%;object-fit:cover}
 @media(min-width:768px){.av-sm{width:34px;height:34px}}
-.app{display:flex;flex:1;overflow:auto;position:relative}
+.app{display:flex;flex:1;min-height:0;position:relative}
 
 /* ─── Sidebar (FIXED colors, no theme change) ─── */
 .sb{display:none;flex-direction:column;width:180px;background:var(--surface);backdrop-filter:blur(12px);border-right:1px solid var(--border);padding:12px 8px;flex-shrink:0}
@@ -88,7 +88,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .g-side .ptmr{font-size:clamp(18px,2.8vw,28px);padding:4px 10px}
 .g-side .cap{justify-content:center;max-width:none}
 @media(max-width:899px){.game{flex-direction:column;max-width:600px;margin:0 auto;gap:10px}.g-side{width:100%;min-width:0}.g-board-area{max-width:100%}.g-side .prow{flex-direction:row;text-align:left;gap:12px;padding:12px 14px;width:100%}.g-side .prow .turn-dot{position:absolute;left:-2px;top:50%;transform:translateY(-50%);margin:0}.g-side .pav{width:38px;height:38px}.g-side .pinf{text-align:left}.g-side .pnm{justify-content:flex-start;font-size:clamp(13px,2.5vw,16px)}.g-side .ptl{font-size:11px}.g-side .ptmr{font-size:clamp(16px,4vw,28px);padding:4px 12px}.g-side .cap{justify-content:flex-start;max-width:80px}}
-@media(max-width:480px){.game{gap:2px}.g-side .prow{padding:4px 6px;gap:4px;border-radius:8px}.g-side .pav{width:24px;height:24px;min-width:24px}.g-side .pnm{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptl{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptmr{font-size:12px;padding:2px 6px;min-width:36px;text-align:center;border-radius:6px}.g-side .cap{max-width:50px;gap:1px}.g-side .cap-p{width:8px;height:8px}.bwr{padding:2px!important;border-width:2px;border-radius:6px}.sbar{gap:2px;padding:0}.sbtn,.sbtn-primary{padding:4px 8px;font-size:10px;border-radius:8px}.sbtn .material-symbols-outlined,.sbtn-primary .material-symbols-outlined{font-size:12px}.smode{font-size:9px;padding:3px 6px}.mstat{font-size:10px}.hdr{padding:4px 8px}.hdr-title{font-size:13px}.hdr-btn{width:26px;height:26px}.hdr-btn .material-symbols-outlined{font-size:16px}.av-sm{width:22px;height:22px}.mr-el .pnm .turn-badge{font-size:7px;padding:1px 4px}.menu-card{padding:14px;gap:12px}.mode-b{padding:12px 8px}.mode-b-icon{font-size:24px}.mode-b-l{font-size:12px}.mode-b-d{font-size:9px}.pick-l{font-size:9px}.cdot{width:28px;height:28px}.btn-st{padding:12px;font-size:14px}.online-setup input{padding:8px 10px;font-size:12px}.room-code-display .code{font-size:22px;letter-spacing:4px}}
+@media(max-width:480px){.game{gap:2px}.g-side .prow{padding:4px 6px;gap:4px;border-radius:8px}.g-side .pav{width:24px;height:24px;min-width:24px}.g-side .pnm{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptl{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptmr{font-size:12px;padding:2px 6px;min-width:36px;text-align:center;border-radius:6px}.g-side .cap{max-width:50px;gap:1px}.g-side .cap-p{width:8px;height:8px}.main{padding:4px}.bwr{padding:2px!important;border-width:2px;border-radius:6px}.sbar{gap:2px;padding:0;flex-wrap:nowrap}.sbtn,.sbtn-primary{padding:4px 8px;font-size:10px;border-radius:8px}.sbtn .material-symbols-outlined,.sbtn-primary .material-symbols-outlined{font-size:12px}.smode{font-size:9px;padding:3px 6px;white-space:nowrap}.room-badge{font-size:9px;padding:2px 6px}.room-badge .material-symbols-outlined{font-size:11px!important}.mstat{font-size:10px}.hdr{padding:6px 10px;min-height:44px}.hdr-title{font-size:15px}.hdr-btn{width:30px;height:30px}.hdr-btn .material-symbols-outlined{font-size:18px}.av-sm{width:24px;height:24px}.menu-card{padding:14px;gap:12px}.mode-b{padding:12px 8px}.mode-b-icon{font-size:24px}.mode-b-l{font-size:12px}.mode-b-d{font-size:9px}.pick-l{font-size:9px}.cdot{width:28px;height:28px}.btn-st{padding:12px;font-size:14px}.online-setup input{padding:8px 10px;font-size:12px}.room-code-display .code{font-size:22px;letter-spacing:4px}}
 
 /* ─── Player rows with turn indicator ─── */
 .prow{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:14px;transition:all .3s;position:relative}
@@ -137,7 +137,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .md.s{width:clamp(10px,2.5vw,20px);height:clamp(10px,2.5vw,20px);background:radial-gradient(circle,rgba(242,202,80,0.45),rgba(242,202,80,0.08));border:2px dashed rgba(242,202,80,0.45)}
 .md.c{width:clamp(14px,3.5vw,28px);height:clamp(14px,3.5vw,28px);background:radial-gradient(circle,rgba(255,60,60,0.35),rgba(255,60,60,0.04));border:3px solid rgba(255,60,60,0.55)}
 @keyframes pulse{0%,100%{opacity:.4;transform:translate(-50%,-50%) scale(.85)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
-.sbar{display:flex;flex-wrap:wrap;gap:10px;width:100%;padding:0 0 8px;align-items:center;justify-content:center}
+.sbar{display:flex;flex-wrap:wrap;gap:8px;width:100%;padding:0 0 8px;align-items:center;justify-content:center}
 .sbtn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:10px 20px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;transition:all .2s}
 .sbtn:hover{background:var(--surface3);color:var(--text);border-color:var(--border-light)}
 .sbtn .material-symbols-outlined{font-size:18px}
@@ -146,6 +146,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .sbtn-primary:active{transform:scale(0.98)}
 .sbtn-primary .material-symbols-outlined{font-size:18px}
 .smode{font-size:12px;color:var(--gold);font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;padding:6px 14px;background:var(--gold-dim);border-radius:10px;border:1px solid var(--gold-glow)}
+.room-badge{font-size:11px;color:var(--gold);font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;padding:4px 10px;background:var(--surface2);border-radius:8px;border:1px solid var(--gold-glow);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s;user-select:none;-webkit-user-select:none}
+.room-badge:hover{background:var(--surface3);filter:brightness(1.1)}
+.room-badge:active{transform:scale(0.95)}
+.room-badge .material-symbols-outlined{font-size:14px}
 .mstat{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);transition:all .3s}
 .mstat.thinking{color:var(--gold)}
 @media(min-width:900px){.mstat{display:none}}
@@ -369,6 +373,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       <div class="g-board-area">
         <div class="sbar">
           <span class="smode" id="modeBadge">🤖 vs IA</span>
+          <span class="room-badge" id="roomBadge" style="display:none" onclick="copyRoomCode()"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> <span id="roomBadgeCode">------</span></span>
           <button id="btnNewGame" class="sbtn-primary"><span class="material-symbols-outlined">refresh</span> Nueva Partida</button>
         </div>
         <div class="bwr bgr"><div class="brd" id="gameBoard"></div></div>
@@ -511,6 +516,8 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const btnJoinRoom = document.getElementById('btnJoinRoom');
   const roomCodeDisplay = document.getElementById('roomCodeDisplay');
   const roomCodeLabel = document.getElementById('roomCodeLabel');
+  const roomBadge = document.getElementById('roomBadge');
+  const roomBadgeCode = document.getElementById('roomBadgeCode');
   const btnStartOnline = document.getElementById('btnStartOnline');
   const chatMessages = document.getElementById('chatMessages');
   const chatInput = document.getElementById('chatInput');
@@ -535,11 +542,16 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   let gameModeOnline = false;
 
   function applyTheme(pIdx, oIdx) {
-    p1Color = pIdx; const tp = THEMES[pIdx];
+    p1Color = pIdx; const tp = THEMES[pIdx], to = THEMES[oIdx] || THEMES[0];
     const r = document.documentElement.style;
     r.setProperty('--p1', tp.p); r.setProperty('--p1-light', tp.l); r.setProperty('--p1-dark', tp.d);
-    if(isLight){ r.setProperty('--p2','#333333'); r.setProperty('--p2-light','#555555'); r.setProperty('--p2-dark','#111111'); }
-    else{ r.setProperty('--p2','#e8e8e8'); r.setProperty('--p2-light','#ffffff'); r.setProperty('--p2-dark','#c0c0c0'); }
+    if(gameMode === 'online' && to){
+      r.setProperty('--p2', to.o); r.setProperty('--p2-light', to.ol); r.setProperty('--p2-dark', to.od);
+    } else if(isLight){
+      r.setProperty('--p2','#333333'); r.setProperty('--p2-light','#555555'); r.setProperty('--p2-dark','#111111');
+    } else {
+      r.setProperty('--p2','#e8e8e8'); r.setProperty('--p2-light','#ffffff'); r.setProperty('--p2-dark','#c0c0c0');
+    }
   }
   function buildSwatches(cont, active, cb) {
     cont.innerHTML = '';
@@ -785,6 +797,17 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     turn = GOLD; selected = null; validMoves = []; render(); resetT();
   }
 
+  // ─── Copy room code ───
+  function copyRoomCode(){
+    if(onlineRoomCode){
+      navigator.clipboard.writeText(onlineRoomCode).then(() => {
+        showToast('Copiado','Código de sala copiado: ' + onlineRoomCode, '📋');
+      }).catch(() => {
+        showToast('Error','No se pudo copiar el código', '⚠️');
+      });
+    }
+  }
+
   // ─── Resume AI on phone unlock ───
   document.addEventListener('visibilitychange', () => {
     if(document.visibilityState === 'visible' && gameMode === 'ai' && gameActive && !gameOver && turn === BLACK) {
@@ -921,6 +944,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     reconnectCodeInput.value='';
     reconnectNameInput.value='';
     btnStart.style.display=gameMode==='online'?'none':'block';
+    roomBadge.style.display='none';
   }
 
   function startGame(){
@@ -931,6 +955,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     menuOv.classList.add('hide');
     const diffLabel=difficulty==='hard'?'🔥 Difícil':'⚖️ Medio';
     modeBadge.textContent=gameMode==='ai'?`🤖 vs IA ${diffLabel}`:gameMode==='online'?`🌐 Online`:'👥 2 Jugadores';
+    if(gameMode==='online' && onlineRoomCode){ roomBadgeCode.textContent=onlineRoomCode; roomBadge.style.display='inline-flex'; } else { roomBadge.style.display='none'; }
     if(gameMode==='ai'){oppName.textContent='Magnus_D';oppTitle.textContent=`Grandmaster • ${difficulty==='hard'?'2400':'2200'}`;myName.textContent='You (Grandmaster)';myTitle.textContent='ELO 2150 • Rank #42';}
     else if(gameMode==='online'){myName.textContent=myOnlineName||'Jugador';myTitle.textContent='Online';oppName.textContent=onlineOpponentName;}
     else{oppName.textContent='Jugador 2';oppTitle.textContent='';myName.textContent='Jugador 1';myTitle.textContent='';}
@@ -991,6 +1016,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       btnStartOnline.dataset.ready = 'true';
       roomCodeDisplay.style.display = 'none';
       updateOnlineStatus('Oponente conectado', 'green');
+      if(data.themeMap && data.themeMap.BLACK !== undefined) p2Color = data.themeMap.BLACK;
     });
     socket.on('game_start', (data) => {
       const me = data.players.find(p => p.socket_id === socket.id);
@@ -1008,10 +1034,11 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       showToast('Oponente desconectado','Esperando reconexión...','⚠️');
       updateOnlineStatus('Oponente desconectado', 'yellow');
     });
-    socket.on('opponent_reconnected', () => {
+    socket.on('opponent_reconnected', (data) => {
       showToast('Oponente reconectado','¡El oponente volvió!','✅');
       updateOnlineStatus('Conectado', 'green');
       stopT(); startT();
+      if(data && data.themeMap && data.themeMap.BLACK !== undefined) p2Color = data.themeMap.BLACK;
     });
     socket.on('opponent_resigned', () => {
       gameOver = true; gameActive = false; stopT(); render();
@@ -1146,7 +1173,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       if(!socket || !socket.connected){ showToast('Error','No hay conexión al servidor','⚠️'); return; }
       myOnlineName = nameInput.value.trim() || 'Jugador';
       nameInput.style.display = 'none';
-      socket.emit('create_room', myOnlineName, (res) => {
+      socket.emit('create_room', { playerName: myOnlineName, p1Color }, (res) => {
         onlineRoomCode = res.code;
         myOnlineColor = 'GOLD';
         roomCodeLabel.textContent = res.code;
@@ -1157,6 +1184,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         btnStartOnline.style.display = 'block';
         btnStartOnline.disabled = true;
         updateOnlineStatus('Esperando oponente...', 'yellow');
+        roomBadgeCode.textContent = res.code;
+        if(res.p2Color !== undefined) p2Color = res.p2Color;
+        if(p2Color !== null && p2Color !== undefined) applyTheme(p1Color, p2Color);
       });
     });
 
@@ -1165,7 +1195,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       const code = roomCodeInput.value.trim().toUpperCase();
       if(!code || code.length !== 6){ showToast('Error','Ingresa un código de 6 caracteres','⚠️'); return; }
       myOnlineName = nameInput.value.trim() || 'Jugador';
-      socket.emit('join_room', { code, name: myOnlineName }, (res) => {
+      socket.emit('join_room', { code, name: myOnlineName, p1Color }, (res) => {
         if(res.error){ showToast('Error',res.error,'⚠️'); return; }
         nameInput.style.display = 'none';
         onlineRoomCode = code;
@@ -1179,6 +1209,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         const opp = res.players.find(p => p.socket_id !== socket.id);
         if(opp){ oppName.textContent = opp.name; onlineOpponentName = opp.name; }
         oppTitle.textContent = 'Online';
+        if(res.themeMap){
+          if(res.themeMap.GOLD !== undefined) p2Color = res.themeMap.GOLD;
+          if(res.themeMap.BLACK !== undefined) p1Color = res.themeMap.BLACK;
+        }
         gameModeOnline = true;
         startGame();
       });
@@ -1205,6 +1239,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         if (me) myOnlineColor = me.color;
         const opp = res.players.find(p => p.socket_id !== socket.id && p.name !== name);
         if (opp) { oppName.textContent = opp.name; onlineOpponentName = opp.name; }
+        if(res.themeMap){
+          if(me && me.color === 'GOLD'){ p1Color = res.themeMap.GOLD ?? p1Color; p2Color = res.themeMap.BLACK ?? p2Color; }
+          else{ p1Color = res.themeMap.BLACK ?? p1Color; p2Color = res.themeMap.GOLD ?? p2Color; }
+        }
         menuOv.classList.add('hide');
         gameModeOnline = true;
         gameActive = true;
