@@ -543,12 +543,15 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
   function applyTheme(pIdx, oIdx) {
     p1Color = pIdx; const r = document.documentElement.style;
-    if(pIdx >= 0 && pIdx < THEMES.length){
-      const tp = THEMES[pIdx];
+    const swap = gameMode === 'online' && myOnlineColor === 'BLACK';
+    const myIdx = swap ? oIdx : pIdx;
+    const oppIdx = swap ? pIdx : oIdx;
+    if(myIdx >= 0 && myIdx < THEMES.length){
+      const tp = THEMES[myIdx];
       r.setProperty('--p1', tp.p); r.setProperty('--p1-light', tp.l); r.setProperty('--p1-dark', tp.d);
     } else { setDefaultPieces('--p1', isLight); }
-    if(gameMode === 'online' && oIdx >= 0 && oIdx < THEMES.length){
-      const to = THEMES[oIdx];
+    if(gameMode === 'online' && oppIdx >= 0 && oppIdx < THEMES.length){
+      const to = THEMES[oppIdx];
       r.setProperty('--p2', to.p); r.setProperty('--p2-light', to.l); r.setProperty('--p2-dark', to.d);
     } else { setDefaultPieces('--p2', isLight); }
   }
@@ -1020,7 +1023,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       btnStartOnline.dataset.ready = 'true';
       roomCodeDisplay.style.display = 'none';
       updateOnlineStatus('Oponente conectado', 'green');
-      if(data.themeMap && data.themeMap.BLACK !== undefined) p2Color = data.themeMap.BLACK;
+      if(data.themeMap && data.themeMap.BLACK !== undefined){ p2Color = data.themeMap.BLACK; applyTheme(p1Color, p2Color); }
     });
     socket.on('game_start', (data) => {
       const me = data.players.find(p => p.socket_id === socket.id);
