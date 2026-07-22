@@ -121,7 +121,9 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .tl{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;position:relative}
 .tl.d{background:#5a3e1b}
 .tl.l{background:#d4c69f;opacity:0.9}
-.tl.lm{box-shadow:inset 0 0 0 3px rgba(242,202,80,0.5), inset 0 0 12px rgba(242,202,80,0.15);z-index:1;background:rgba(242,202,80,0.08)!important}
+.tl.lm{box-shadow:inset 0 0 0 3px rgba(242,202,80,0.7), inset 0 0 16px rgba(242,202,80,0.25);z-index:1;background:rgba(242,202,80,0.12)!important}
+.tl.lm.from{position:relative}.lm-ind{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(242,202,80,0.5);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
+.tl.lm.to{box-shadow:inset 0 0 0 3px rgba(242,202,80,0.9), inset 0 0 20px rgba(242,202,80,0.3);background:rgba(242,202,80,0.18)!important}
 .pc{width:clamp(22px,6.5vw,44px);height:clamp(22px,6.5vw,44px);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:2;cursor:pointer;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;will-change:transform}
 .pc:hover{transform:scale(1.08) translateY(-2px);filter:drop-shadow(0 6px 16px rgba(0,0,0,0.5))}
 .pc.gp{background:radial-gradient(ellipse at 35% 28%,var(--p1-light),var(--p1) 55%,var(--p1-dark));border:2px solid var(--p1-dark);box-shadow:0 2px 8px rgba(0,0,0,0.4),inset 0 2px 3px rgba(255,255,255,0.2),inset 0 -2px 3px rgba(0,0,0,0.08)}
@@ -906,7 +908,8 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     const flip=gameModeOnline&&myOnlineColor==='BLACK';
     for(let r=flip?7:0;flip?r>=0:r<8;r+=flip?-1:1)for(let c=0;c<8;c++){
       const t=document.createElement('div');t.className=`tl ${(r+c)%2===1?'d':'l'}`;
-      if(lastMove&&((lastMove.from.r===r&&lastMove.from.c===c)||(lastMove.to.r===r&&lastMove.to.c===c)))t.className+=' lm';
+      if(lastMove&&(lastMove.from.r===r&&lastMove.from.c===c)){t.className+=' lm from';const d=document.createElement('div');d.className='lm-ind';t.appendChild(d);}
+      else if(lastMove&&(lastMove.to.r===r&&lastMove.to.c===c))t.className+=' lm to';
       const iv=validMoves.some(x=>x.row===r&&x.col===c);
       if(iv){const mv=validMoves.find(x=>x.row===r&&x.col===c);const d=document.createElement('div');d.className=`md ${mv&&mv.captures.length?'c':'s'}`;t.appendChild(d);}
       const p=board[r][c];
@@ -1081,7 +1084,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     const result = applyMv(board, fr, fc, move);
     board = result.board;
     if(result.captured.length) (myOnlineColor === 'GOLD' ? opponentCaptured : playerCaptured).push(...result.captured);
-    lastMove = { from: {row: fr, col: fc}, to: {row: tr, col: tc} };
+    lastMove = { from: {r: fr, c: fc}, to: {r: tr, c: tc} };
     selected = null; validMoves = [];
     turn = myOnlineColor === 'GOLD' ? GOLD : BLACK;
     moveCount++;
