@@ -845,7 +845,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         board=res.board;lastMove={from:{r:fr,c:fc},to:{r,c}};moveCount++;if(res.captured.length)movesSinceCapture=0;else movesSinceCapture++;
         if(gameMode==='ai'&&!gameOver&&movesSinceCapture>=40){gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();showToast('Empate técnico','40 movimientos sin capturas. La partida termina en empate.','🤝',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);return;}
         // Send move to server if online
-        if(gameModeOnline && socket) socket.emit('make_move', { fromRow: fr, fromCol: fc, toRow: r, toCol: c, captures: mv.captures || [], board_state: JSON.stringify(board), next_turn: turn === GOLD ? 'BLACK' : 'GOLD', gold_captured: JSON.stringify(playerCaptured), black_captured: JSON.stringify(opponentCaptured) });
+        if(gameModeOnline && socket) socket.emit('make_move', { fromRow: fr, fromCol: fc, toRow: r, toCol: c, captures: mv.captures || [], board_state: JSON.stringify(board), next_turn: turn === GOLD ? 'BLACK' : 'GOLD', gold_captured: JSON.stringify(playerCaptured), black_captured: JSON.stringify(opponentCaptured), gold_time: playerSec, black_time: opponentSec });
         const opp=turn===GOLD?BLACK:GOLD;
         if(!hm(board,opp)||cp(board,opp)===0){
           gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();
@@ -1245,6 +1245,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         if (res.error) { showToast('Error', res.error, '⚠️'); return; }
         myOnlineName = name;
         onlineRoomCode = code;
+        gameMode = 'online';
         const me = res.players.find(p => p.socket_id === socket.id || p.name === name);
         if (me) myOnlineColor = me.color;
         const opp = res.players.find(p => p.socket_id !== socket.id && p.name !== name);
@@ -1253,6 +1254,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
           if(me && me.color === 'GOLD'){ p1Color = res.themeMap.GOLD ?? p1Color; p2Color = res.themeMap.BLACK ?? p2Color; }
           else{ p1Color = res.themeMap.BLACK ?? p1Color; p2Color = res.themeMap.GOLD ?? p2Color; }
         }
+        applyTheme(p1Color, p2Color);
         menuOv.classList.add('hide');
         gameModeOnline = true;
         gameActive = true;
@@ -1265,13 +1267,15 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
           board = initB();
         }
         turn = res.turn === 'GOLD' ? GOLD : BLACK;
-        gameOver = false; lastMove = null; selected = null; validMoves = [];
+        gameOver = false; lastMove = res.lastMove || null; selected = null; validMoves = [];
         modeBadge.textContent = '🌐 Online';
+        roomBadgeCode.textContent = code; roomBadge.style.display = 'inline-flex';
         myName.textContent = myOnlineName;
         oppName.textContent = onlineOpponentName;
         myTitle.textContent = 'Online';
         oppTitle.textContent = myOnlineColor === 'GOLD' ? '' : 'Online';
-        playerSec = 300; opponentSec = 300;
+        playerSec = res.gold_time !== undefined ? res.gold_time : 300;
+        opponentSec = res.black_time !== undefined ? res.black_time : 300;
         stopT(); startT(); render();
         if (myOnlineColor === 'BLACK') { disableInteraction(); mStat.textContent = 'Esperando turno del oponente'; }
         else { enableInteraction(); mStat.textContent = 'Tu turno'; }

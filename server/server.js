@@ -132,9 +132,9 @@ async function updateRoomStatus(code, status) {
   return dbRun('UPDATE rooms SET status = $1 WHERE code = $2', [status, code]);
 }
 
-async function updateRoomBoard(code, board_state, turn, gold_captured, black_captured) {
-  return dbRun('UPDATE rooms SET board_state = $1, turn = $2, gold_captured = $3, black_captured = $4 WHERE code = $5',
-    [board_state, turn, gold_captured, black_captured, code]);
+async function updateRoomBoard(code, board_state, turn, gold_captured, black_captured, gold_time, black_time) {
+  return dbRun('UPDATE rooms SET board_state = $1, turn = $2, gold_captured = $3, black_captured = $4, gold_time = $5, black_time = $6 WHERE code = $7',
+    [board_state, turn, gold_captured, black_captured, gold_time ?? 300, black_time ?? 300, code]);
 }
 
 async function deleteRoomByCode(code) {
@@ -275,7 +275,8 @@ io.on('connection', (socket) => {
     const moves = await getMoves(entry.room.id);
     const chat = await getChat(entry.room.id);
     const rd = getRoomData(code);
-    callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, moves, chat, themeMap: rd?.themeMap || {} });
+    const lastMoveData = moves.length ? moves[moves.length - 1] : null;
+    callback({ success: true, players: entry.players, turn: entry.room.turn, board_state: entry.room.board_state, gold_captured: entry.room.gold_captured, black_captured: entry.room.black_captured, gold_time: entry.room.gold_time, black_time: entry.room.black_time, moves, chat, themeMap: rd?.themeMap || {}, lastMove: lastMoveData ? { from: { r: lastMoveData.from_row, c: lastMoveData.from_col }, to: { r: lastMoveData.to_row, c: lastMoveData.to_col } } : null });
     console.log(`${name} reconectado a sala ${code}`);
   });
 
@@ -292,7 +293,9 @@ io.on('connection', (socket) => {
       roomData.room.turn = data.next_turn;
       roomData.room.gold_captured = data.gold_captured || roomData.room.gold_captured;
       roomData.room.black_captured = data.black_captured || roomData.room.black_captured;
-      await updateRoomBoard(code, roomData.room.board_state, roomData.room.turn, roomData.room.gold_captured, roomData.room.black_captured);
+      roomData.room.gold_time = data.gold_time ?? roomData.room.gold_time;
+      roomData.room.black_time = data.black_time ?? roomData.room.black_time;
+      await updateRoomBoard(code, roomData.room.board_state, roomData.room.turn, roomData.room.gold_captured, roomData.room.black_captured, roomData.room.gold_time, roomData.room.black_time);
     }
     socket.to(code).emit('opponent_move', data);
   });
