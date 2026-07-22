@@ -28,10 +28,10 @@
   --overlay:rgba(255,255,255,0.82);
   --gold-dim:rgba(212,169,68,0.12);--gold-glow:rgba(212,169,68,0.15);
 }
-body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:auto;overscroll-behavior:none;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:4px}
-.hdr{background:var(--surface);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;padding:6px 14px;z-index:60;flex-shrink:0}
+.hdr{background:var(--surface);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;padding:6px 14px;z-index:60;flex-shrink:0;position:sticky;top:0}
 .hdr-title{font-size:clamp(14px,2.5vw,22px);font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.03em}
 .hdr nav{display:none;gap:20px}
 @media(min-width:768px){.hdr nav{display:flex}}
@@ -45,7 +45,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .av-sm{width:28px;height:28px;border-radius:50%;overflow:hidden;border:2px solid rgba(242,202,80,0.25);flex-shrink:0}
 .av-sm img{width:100%;height:100%;object-fit:cover}
 @media(min-width:768px){.av-sm{width:34px;height:34px}}
-.app{display:flex;flex:1;overflow:hidden;position:relative}
+.app{display:flex;flex:1;overflow:auto;position:relative}
 
 /* ─── Sidebar (FIXED colors, no theme change) ─── */
 .sb{display:none;flex-direction:column;width:180px;background:var(--surface);backdrop-filter:blur(12px);border-right:1px solid var(--border);padding:12px 8px;flex-shrink:0}
@@ -75,7 +75,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .btn-sgh .material-symbols-outlined{font-size:18px;color:var(--text-muted)}
 .btn-sgh:hover .material-symbols-outlined{color:#ff6b6b}
 
-.main{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:10px;background:radial-gradient(ellipse at center,var(--surface) 0%,var(--bg) 100%);position:relative}
+.main{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px;background:radial-gradient(ellipse at center,var(--surface) 0%,var(--bg) 100%);position:relative}
 .game{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:clamp(4px,1vw,16px);width:100%;max-width:100%}
 .g-side{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:clamp(90px,14vw,160px);min-width:80px}
 .g-board-area{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:560px;width:100%}
@@ -88,7 +88,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .g-side .ptmr{font-size:clamp(18px,2.8vw,28px);padding:4px 10px}
 .g-side .cap{justify-content:center;max-width:none}
 @media(max-width:899px){.game{flex-direction:column;max-width:600px;margin:0 auto;gap:10px}.g-side{width:100%;min-width:0}.g-board-area{max-width:100%}.g-side .prow{flex-direction:row;text-align:left;gap:12px;padding:12px 14px;width:100%}.g-side .prow .turn-dot{position:absolute;left:-2px;top:50%;transform:translateY(-50%);margin:0}.g-side .pav{width:38px;height:38px}.g-side .pinf{text-align:left}.g-side .pnm{justify-content:flex-start;font-size:clamp(13px,2.5vw,16px)}.g-side .ptl{font-size:11px}.g-side .ptmr{font-size:clamp(16px,4vw,28px);padding:4px 12px}.g-side .cap{justify-content:flex-start;max-width:80px}}
-@media(max-width:480px){.game{gap:4px}.g-side .prow{padding:6px 8px;gap:6px}.g-side .pav{width:28px;height:28px}.g-side .pnm{font-size:12px}.g-side .ptl{font-size:9px}.g-side .ptmr{font-size:14px;padding:2px 8px;min-width:42px;text-align:center}.g-side .cap{max-width:60px;gap:2px}.g-side .cap-p{width:10px;height:10px}.bwr{padding:3px!important;border-width:2px}.sbar{gap:4px}.sbtn,.sbtn-primary{padding:6px 10px;font-size:11px}.sbtn .material-symbols-outlined,.sbtn-primary .material-symbols-outlined{font-size:14px}.smode{font-size:10px;padding:4px 8px}.mstat{font-size:11px}}
+@media(max-width:480px){.game{gap:2px}.g-side .prow{padding:4px 6px;gap:4px;border-radius:8px}.g-side .pav{width:24px;height:24px;min-width:24px}.g-side .pnm{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptl{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g-side .ptmr{font-size:12px;padding:2px 6px;min-width:36px;text-align:center;border-radius:6px}.g-side .cap{max-width:50px;gap:1px}.g-side .cap-p{width:8px;height:8px}.bwr{padding:2px!important;border-width:2px;border-radius:6px}.sbar{gap:2px;padding:0}.sbtn,.sbtn-primary{padding:4px 8px;font-size:10px;border-radius:8px}.sbtn .material-symbols-outlined,.sbtn-primary .material-symbols-outlined{font-size:12px}.smode{font-size:9px;padding:3px 6px}.mstat{font-size:10px}.hdr{padding:4px 8px}.hdr-title{font-size:13px}.hdr-btn{width:26px;height:26px}.hdr-btn .material-symbols-outlined{font-size:16px}.av-sm{width:22px;height:22px}.mr-el .pnm .turn-badge{font-size:7px;padding:1px 4px}.menu-card{padding:14px;gap:12px}.mode-b{padding:12px 8px}.mode-b-icon{font-size:24px}.mode-b-l{font-size:12px}.mode-b-d{font-size:9px}.pick-l{font-size:9px}.cdot{width:28px;height:28px}.btn-st{padding:12px;font-size:14px}.online-setup input{padding:8px 10px;font-size:12px}.room-code-display .code{font-size:22px;letter-spacing:4px}}
 
 /* ─── Player rows with turn indicator ─── */
 .prow{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:14px;transition:all .3s;position:relative}
@@ -153,7 +153,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 /* ─── Menu overlay ─── */
 .menu-overlay{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--overlay);backdrop-filter:blur(8px);transition:opacity .4s ease}
 .menu-overlay.hide{opacity:0;pointer-events:none}
-.menu-card{background:var(--surface);backdrop-filter:blur(20px);border:1px solid var(--border-light);border-radius:24px;padding:clamp(24px,5vw,36px);max-width:460px;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;box-shadow:0 24px 80px rgba(0,0,0,0.6)}
+.menu-card{background:var(--surface);backdrop-filter:blur(20px);border:1px solid var(--border-light);border-radius:24px;padding:clamp(20px,4vw,36px);max-width:460px;width:100%;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 80px rgba(0,0,0,0.6)}
 .m-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(135deg,var(--gold-light),var(--gold-dark));color:#1a1500;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
 .m-title{font-size:clamp(24px,4vw,32px);font-weight:800;text-align:center;background:linear-gradient(135deg,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .m-sub{font-size:14px;color:rgba(255,255,255,0.35);text-align:center;margin-top:-12px}
@@ -469,7 +469,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
   const EMPTY = 0, BLACK = 1, BLACK_KING = 2, GOLD = -1, GOLD_KING = -2;
   let board = [], turn = GOLD, selected = null, validMoves = [];
-  let moveCount = 0, gameOver = false, lastMove = null, gameActive = false;
+  let moveCount = 0, movesSinceCapture = 0, gameOver = false, lastMove = null, gameActive = false;
   const TIME = 300;
   let playerSec = TIME, opponentSec = TIME, timerInt = null;
   let playerCaptured = [], opponentCaptured = [];
@@ -535,10 +535,11 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   let gameModeOnline = false;
 
   function applyTheme(pIdx, oIdx) {
-    p1Color = pIdx; const tp = THEMES[pIdx], to = THEMES[oIdx];
+    p1Color = pIdx; const tp = THEMES[pIdx];
     const r = document.documentElement.style;
     r.setProperty('--p1', tp.p); r.setProperty('--p1-light', tp.l); r.setProperty('--p1-dark', tp.d);
-    r.setProperty('--p2', to.o); r.setProperty('--p2-light', to.ol); r.setProperty('--p2-dark', to.od);
+    if(isLight){ r.setProperty('--p2','#333333'); r.setProperty('--p2-light','#555555'); r.setProperty('--p2-dark','#111111'); }
+    else{ r.setProperty('--p2','#e8e8e8'); r.setProperty('--p2-light','#ffffff'); r.setProperty('--p2-dark','#c0c0c0'); }
   }
   function buildSwatches(cont, active, cb) {
     cont.innerHTML = '';
@@ -774,7 +775,8 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     if(res.captured.length) for(const cp of res.captured) opponentCaptured.push(cp);
     board = res.board;
     lastMove = { from: { r: ch.r, c: ch.c }, to: { r: ch.move.row, c: ch.move.col } };
-    moveCount++;
+    moveCount++;if(res.captured.length)movesSinceCapture=0;else movesSinceCapture++;
+    if(gameMode==='ai'&&movesSinceCapture>=40){gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();showToast('Empate técnico','40 movimientos sin capturas. La partida termina en empate.','🤝',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);return;}
     if(!hm(board, GOLD) || cp(board, GOLD) === 0) {
       gameOver = true; gameActive = false; selected = null; validMoves = []; stopT(); render();
       showToast('Magnus_D gana!','La IA te ha vencido','🤖',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
@@ -808,7 +810,8 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         const fr=selected.row,fc=selected.col;
         const res=applyMv(board,fr,fc,mv);
         if(res.captured.length){if(turn===GOLD)for(const cp of res.captured)playerCaptured.push(cp);else for(const cp of res.captured)opponentCaptured.push(cp);}
-        board=res.board;lastMove={from:{r:fr,c:fc},to:{r,c}};moveCount++;
+        board=res.board;lastMove={from:{r:fr,c:fc},to:{r,c}};moveCount++;if(res.captured.length)movesSinceCapture=0;else movesSinceCapture++;
+        if(gameMode==='ai'&&!gameOver&&movesSinceCapture>=40){gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();showToast('Empate técnico','40 movimientos sin capturas. La partida termina en empate.','🤝',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);return;}
         // Send move to server if online
         if(gameModeOnline && socket) socket.emit('make_move', { fromRow: fr, fromCol: fc, toRow: r, toCol: c, captures: mv.captures || [], board_state: JSON.stringify(board), next_turn: turn === GOLD ? 'BLACK' : 'GOLD', gold_captured: JSON.stringify(playerCaptured), black_captured: JSON.stringify(opponentCaptured) });
         const opp=turn===GOLD?BLACK:GOLD;
@@ -923,7 +926,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   function startGame(){
     if(gameMode==='ai')p2Color=Math.floor(Math.random()*THEMES.length);
     applyTheme(p1Color,p2Color);
-    board=initB();turn=GOLD;selected=null;validMoves=[];moveCount=0;gameOver=false;lastMove=null;gameActive=true;
+    board=initB();turn=GOLD;selected=null;validMoves=[];moveCount=0;movesSinceCapture=0;gameOver=false;lastMove=null;gameActive=true;
     playerSec=TIME;opponentSec=TIME;playerCaptured=[];opponentCaptured=[];
     menuOv.classList.add('hide');
     const diffLabel=difficulty==='hard'?'🔥 Difícil':'⚖️ Medio';
@@ -1110,6 +1113,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     isLight = !isLight;
     document.documentElement.classList.toggle('light', isLight);
     themeToggle.innerHTML = `<span class="material-symbols-outlined">${isLight ? 'light_mode' : 'dark_mode'}</span>`;
+    applyTheme(p1Color, p2Color);
   });
 
   document.addEventListener('DOMContentLoaded',() => {
