@@ -198,8 +198,6 @@ function getRoomData(code) {
   return null;
 }
 
-const THEME_COUNT = 4;
-
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -248,9 +246,7 @@ io.on('connection', (socket) => {
     let joinerTheme = p1Color;
     const rd = getRoomData(code);
     if (rd && rd.themeMap && rd.themeMap.GOLD === joinerTheme) {
-      const used = [rd.themeMap.GOLD];
-      const available = Array.from({length: THEME_COUNT}, (_, i) => i).filter(i => !used.includes(i));
-      joinerTheme = available.length ? available[Math.floor(Math.random() * available.length)] : 0;
+      joinerTheme = -1;
     }
     await insertPlayer(room.id, socket.id, name, 'BLACK');
     await updateRoomStatus(code, 'playing');

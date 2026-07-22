@@ -542,16 +542,20 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   let gameModeOnline = false;
 
   function applyTheme(pIdx, oIdx) {
-    p1Color = pIdx; const tp = THEMES[pIdx], to = THEMES[oIdx] || THEMES[0];
+    p1Color = pIdx; const r = document.documentElement.style;
+    if(pIdx >= 0 && pIdx < THEMES.length){
+      const tp = THEMES[pIdx];
+      r.setProperty('--p1', tp.p); r.setProperty('--p1-light', tp.l); r.setProperty('--p1-dark', tp.d);
+    } else { setDefaultPieces('--p1', isLight); }
+    if(gameMode === 'online' && oIdx >= 0 && oIdx < THEMES.length){
+      const to = THEMES[oIdx];
+      r.setProperty('--p2', to.p); r.setProperty('--p2-light', to.l); r.setProperty('--p2-dark', to.d);
+    } else { setDefaultPieces('--p2', isLight); }
+  }
+  function setDefaultPieces(prefix, light){
     const r = document.documentElement.style;
-    r.setProperty('--p1', tp.p); r.setProperty('--p1-light', tp.l); r.setProperty('--p1-dark', tp.d);
-    if(gameMode === 'online' && to){
-      r.setProperty('--p2', to.o); r.setProperty('--p2-light', to.ol); r.setProperty('--p2-dark', to.od);
-    } else if(isLight){
-      r.setProperty('--p2','#333333'); r.setProperty('--p2-light','#555555'); r.setProperty('--p2-dark','#111111');
-    } else {
-      r.setProperty('--p2','#e8e8e8'); r.setProperty('--p2-light','#ffffff'); r.setProperty('--p2-dark','#c0c0c0');
-    }
+    if(light){ r.setProperty(prefix,'#333333'); r.setProperty(prefix+'-light','#555555'); r.setProperty(prefix+'-dark','#111111'); }
+    else{ r.setProperty(prefix,'#e8e8e8'); r.setProperty(prefix+'-light','#ffffff'); r.setProperty(prefix+'-dark','#c0c0c0'); }
   }
   function buildSwatches(cont, active, cb) {
     cont.innerHTML = '';
