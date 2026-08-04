@@ -694,101 +694,165 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     return score;
   }
 
-  function orderMoves(b, moves) {
-    return moves.sort((a, bb) => {
-      const ma = a.move, mb = bb.move;
-      if(ma.captures.length !== mb.captures.length) return mb.captures.length - ma.captures.length;
-      const ca = Math.abs(a.move.col - 3.5), cb = Math.abs(bb.move.col - 3.5);
-      if(ca !== cb) return ca - cb;
-      return Math.abs(a.move.row - 3.5) - Math.abs(bb.move.row - 3.5);
+  function orderMoves(b, moves, ply, ttMove) {
+    const scored = moves.map(mv => {
+      let s = 0;
+      if(ttMove && ttMove.r === mv.r && ttMove.c === mv.c && ttMove.row === mv.move.row && ttMove.col === mv.move.col) s = 1000000;
+      for(const cap of mv.move.captures){
+        const victim = b[cap.r][cap.c], attacker = b[mv.r][mv.c];
+        s += 10 * (isK(victim) ? 3.5 : 1) - (isK(attacker) ? 3.5 : 1) + 8;
+      }
+      if(s === 0){
+        const km = killerMoves[ply] || [];
+        if(km.some(k => k.r === mv.r && k.c === mv.c && k.row === mv.move.row && k.col === mv.move.col)) s = 900000;
+      }
+      return { mv, s };
     });
+    scored.sort((a, b) => b.s - a.s);
+    return scored.map(x => x.mv);
   }
 
-  function minimax(b, depth, alpha, beta, isMaximizing, maxDepth) {
-    if(depth === 0) return { score: evaluate(b) };
-    const color = isMaximizing ? BLACK : GOLD;
-    const moves = allMoves(b, color);
-    if(moves.length === 0) {
-      return { score: isMaximizing ? -99999 + (maxDepth - depth) : 99999 - (maxDepth - depth) };
-    }
-    let bestMove = null;
-    const ordered = depth >= 2 ? orderMoves(b, moves) : moves;
-    if(isMaximizing) {
-      let maxEval = -Infinity;
-      for(const mv of ordered) {
-        const result = applyMv(b, mv.r, mv.c, mv.move);
-        const ev = minimax(result.board, depth - 1, alpha, beta, false, maxDepth);
-        if(ev.score > maxEval) { maxEval = ev.score; bestMove = mv; }
-        alpha = Math.max(alpha, maxEval);
-        if(beta <= alpha) break;
-      }
-      return { score: maxEval, move: bestMove };
-    } else {
-      let minEval = Infinity;
-      for(const mv of ordered) {
-        const result = applyMv(b, mv.r, mv.c, mv.move);
-        const ev = minimax(result.board, depth - 1, alpha, beta, true, maxDepth);
-        if(ev.score < minEval) { minEval = ev.score; bestMove = mv; }
-        beta = Math.min(beta, minEval);
-        if(beta <= alpha) break;
-      }
-      return { score: minEval, move: bestMove };
-    }
+  const MATE = 100000;
+  const TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
+  let tt = new Map(), evalCache = new Map(), killerMoves = [];
+  let aborted = false, searchStart = 0, searchBudget = 0, searchNodes = 0;
+
+  function boardKey(b){ return b[0].join('')+'|'+b[1].join('')+'|'+b[2].join('')+'|'+b[3].join('')+'|'+b[4].join('')+'|'+b[5].join('')+'|'+b[6].join('')+'|'+b[7].join(''); }
+  function ttKey(b, color){ return boardKey(b) + (color === BLACK ? 'B' : 'G'); }
+  function cachedEvaluate(b){
+    const k = boardKey(b);
+    const v = evalCache.get(k);
+    if(v !== undefined) return v;
+    const s = evaluate(b);
+    if(evalCache.size > 50000) evalCache.clear();
+    evalCache.set(k, s);
+    return s;
+  }
+  function evaluateColor(b, color){ const s = cachedEvaluate(b); return color === BLACK ? s : -s; }
+  function addKiller(mv, ply){
+    if(ply >= killerMoves.length) return;
+    const km = killerMoves[ply];
+    const ent = { r: mv.r, c: mv.c, row: mv.move.row, col: mv.move.col };
+    if(km.some(k => k.r === ent.r && k.c === ent.c && k.row === ent.row && k.col === ent.col)) return;
+    km.unshift(ent);
+    if(km.length > 2) km.pop();
   }
 
-  // Capture-heavy heuristic search for medium depth
-  function heuristicBest(b, color) {
-    const moves = allMoves(b, color);
-    if(!moves.length) return null;
-    const caps = moves.filter(m => m.move.captures.length > 0);
-    if(caps.length) {
-      // Prefer multi-capture
-      const multi = caps.filter(m => m.move.captures.length >= 2);
-      return multi.length ? multi[Math.floor(Math.random() * multi.length)] : caps[Math.floor(Math.random() * caps.length)];
+  function quiescence(b, color, alpha, beta){
+    const stand = evaluateColor(b, color);
+    if(stand >= beta) return stand;
+    if(stand > alpha) alpha = stand;
+    const moves = [];
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const p = b[r][c];
+      if(p !== EMPTY && ((color === BLACK && isB(p)) || (color === GOLD && isG(p)))){
+        for(const m of gc(b, r, c)) moves.push({ r, c, move: m });
+      }
     }
-    // Score each move with quick eval
-    let best = null, bestScore = -Infinity;
-    for(const mv of moves) {
+    if(!moves.length) return alpha;
+    const ordered = orderMoves(b, moves, 24, null);
+    for(const mv of ordered){
       const res = applyMv(b, mv.r, mv.c, mv.move);
-      const s = evaluate(res.board);
-      if(s > bestScore) { bestScore = s; best = mv; }
+      const score = -quiescence(res.board, color === BLACK ? GOLD : BLACK, -beta, -alpha);
+      if(score >= beta) return score;
+      if(score > alpha) alpha = score;
     }
+    return alpha;
+  }
+
+  function negamax(b, color, depth, alpha, beta, ply){
+    if(aborted) return 0;
+    searchNodes++;
+    if((searchNodes & 255) === 0 && Date.now() - searchStart > searchBudget) aborted = true;
+    if(aborted) return 0;
+    if(depth <= 0) return quiescence(b, color, alpha, beta);
+    const key = ttKey(b, color);
+    const entry = tt.get(key);
+    if(entry && entry.depth >= depth){
+      if(entry.flag === TT_EXACT) return entry.score;
+      if(entry.flag === TT_LOWER && entry.score >= beta) return entry.score;
+      if(entry.flag === TT_UPPER && entry.score <= alpha) return entry.score;
+    }
+    let moves = entry ? entry.moves : null;
+    if(!moves) moves = allMoves(b, color);
+    if(moves.length === 0) return -(MATE - ply);
+    let best = -Infinity, bestMove = null;
+    const origAlpha = alpha;
+    const ttMove = entry ? entry.move : null;
+    const ordered = orderMoves(b, moves, ply, ttMove);
+    for(const mv of ordered){
+      const res = applyMv(b, mv.r, mv.c, mv.move);
+      const score = -negamax(res.board, color === BLACK ? GOLD : BLACK, depth - 1, -beta, -alpha, ply + 1);
+      if(score > best){ best = score; bestMove = mv; }
+      if(score > alpha) alpha = score;
+      if(alpha >= beta){
+        if(!mv.move.captures.length) addKiller(mv, ply);
+        break;
+      }
+    }
+    if(aborted) return 0;
+    let flag = TT_UPPER;
+    if(best <= origAlpha) flag = TT_UPPER;
+    else if(best >= beta) flag = TT_LOWER;
+    else flag = TT_EXACT;
+    if(tt.size > 200000) tt.clear();
+    tt.set(key, { depth, flag, score: best, move: bestMove, moves });
     return best;
+  }
+
+  function negamaxRoot(b, color, depth){
+    const key = ttKey(b, color);
+    const entry = tt.get(key);
+    let moves = entry ? entry.moves : null;
+    if(!moves) moves = allMoves(b, color);
+    if(!moves.length) return { score: -(MATE - 1), move: null };
+    const ttMove = entry ? entry.move : null;
+    const ordered = orderMoves(b, moves, 0, ttMove);
+    let alpha = -Infinity, best = -Infinity, bestMove = null;
+    for(const mv of ordered){
+      const res = applyMv(b, mv.r, mv.c, mv.move);
+      const score = -negamax(res.board, color === BLACK ? GOLD : BLACK, depth - 1, -Infinity, -alpha, 1);
+      if(score > best){ best = score; bestMove = mv; }
+      if(score > alpha) alpha = score;
+      if(aborted) break;
+    }
+    return { score: best, move: bestMove };
+  }
+
+  function searchBestMove(b, color, budget, maxDepth){
+    tt.clear(); evalCache.clear();
+    killerMoves = Array.from({ length: 32 }, () => []);
+    aborted = false; searchNodes = 0; searchStart = Date.now(); searchBudget = budget;
+    let bestMove = null;
+    for(let d = 1; d <= maxDepth; d++){
+      aborted = false;
+      const res = negamaxRoot(b, color, d);
+      if(aborted) break;
+      if(res.move) bestMove = res.move;
+      if(Math.abs(res.score) > MATE - 100) break;
+      if(Date.now() - searchStart > budget) break;
+    }
+    return bestMove;
   }
 
   function aiMove() {
     if(gameOver || turn !== BLACK || !gameActive) return;
 
     const isHard = difficulty === 'hard';
-    const maxDepth = isHard ? 4 : 3;
-    const delay = isHard ? 600 : 900;
-
-    // For medium: try heuristic first, then minimax
-    if(!isHard) {
-      const fastMove = heuristicBest(board, BLACK);
-      if(fastMove) {
-        // Use heuristic move with random chance to add variety
-        if(Math.random() < 0.25) {
-          executeAIMove(fastMove);
-          return;
-        }
-      }
-    }
-
-    const result = minimax(board, maxDepth, -Infinity, Infinity, true, maxDepth);
-    const chosen = result.move || heuristicBest(board, BLACK);
-
-    if(!chosen) {
-      const fallback = allMoves(board, BLACK);
-      if(!fallback.length) {
-        gameOver = true; gameActive = false; render();
-        showToast('¡Tú ganas!','El oponente no tiene movimientos','🏆',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
-        return;
-      }
-      executeAIMove(fallback[Math.floor(Math.random() * fallback.length)]);
+    const budget = isHard ? 500 : 160;
+    const maxDepth = isHard ? 10 : 5;
+    const chosen = searchBestMove(board, BLACK, budget, maxDepth);
+    if(chosen){
+      setTimeout(() => executeAIMove(chosen), isHard ? 150 : 250);
       return;
     }
-    setTimeout(() => executeAIMove(chosen), delay);
+    const fallback = allMoves(board, BLACK);
+    if(!fallback.length){
+      gameOver = true; gameActive = false; render();
+      showToast('¡Tú ganas!','El oponente no tiene movimientos','🏆',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
+      return;
+    }
+    setTimeout(() => executeAIMove(fallback[Math.floor(Math.random() * fallback.length)]), 200);
   }
 
   function executeAIMove(ch) {
