@@ -250,6 +250,25 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
 /* ─── Rules content ─── */
 .rules-content{display:flex;flex-direction:column;gap:14px;color:var(--text-dim);font-size:14px;line-height:1.6}
+.rank-loading{color:var(--text-muted);text-align:center;padding:20px;font-size:14px}
+.rank-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);font-size:13px}
+.rank-row.me{border:1px solid var(--gold)}
+.rank-pos{font-weight:700;color:var(--gold);min-width:34px;text-align:center;font-family:'JetBrains Mono',monospace}
+.rank-un{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-elo{font-weight:700;color:var(--gold);font-family:'JetBrains Mono',monospace}
+.rank-wl{color:var(--text-muted);font-size:11px;font-family:'JetBrains Mono',monospace}
+.social-add{display:flex;gap:8px;margin-top:10px}
+.social-add .name-input{flex:1}
+.social-sec-t{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:14px 0 6px}
+.social-list{display:flex;flex-direction:column;gap:6px}
+.social-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);font-size:13px}
+.social-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.social-dot.on{background:#2ecc71;box-shadow:0 0 8px rgba(46,204,113,0.6)}
+.social-dot.off{background:#555}
+.social-un{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.social-elo{color:var(--text-muted);font-size:11px;font-family:'JetBrains Mono',monospace}
+.social-empty{color:var(--text-muted);font-size:12px;text-align:center;padding:8px}
 .rules-content h3{color:var(--gold);font-size:15px;font-weight:600;margin-top:4px}
 .rules-content h3:first-child{margin-top:0}
 .rules-content ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -273,8 +292,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 .auth-tabs .btn-sgh{flex:1;font-size:12px;padding:8px 6px}
 .auth-tabs .btn-sgh.act{background:rgba(255,215,0,0.12);border-color:var(--gold);color:var(--gold)}
 .auth-fields{display:flex;flex-direction:column;gap:8px}
-.auth-err{font-size:12px;color:#ff6b6b;text-align:center}
-.auth-user{display:flex;align-items:center;gap:10px;width:100%}
+.auth-err{font-size:12px;color:#ff6b6b;text-align:center}.auth-user{display:flex;align-items:center;gap:10px;width:100%}
 .auth-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(135deg,#c9a227,#f2ca50);color:#1a1a2e;flex-shrink:0}
 .auth-ui{flex:1;min-width:0}
 .auth-un{font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -308,7 +326,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 <body>
 <header class="hdr">
   <div class="hdr-title">♛ FrienDamas</div>
-  <nav><a href="#">Play</a><a href="#">Tournaments</a><a href="#">Rankings</a></nav>
+  <nav><a href="#">Play</a><a href="#">Tournaments</a><a href="#" id="navRanking">Rankings</a></nav>
   <div class="hdr-r">
     <button id="chatToggleHdr" class="hdr-btn" title="Chat"><span class="material-symbols-outlined">chat</span></button>
     <button id="themeToggle" class="hdr-btn" title="Modo claro/oscuro"><span class="material-symbols-outlined">dark_mode</span></button>
@@ -321,8 +339,8 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     <aside class="sb">
     <div class="sb-prof"><div class="sb-av"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuANjqlmxWSXrJ8tvXvyevjQWCqaXKkn6OXlflQUH7f-uK-lQgzd1hJVepjIwAfZnIBrpYoojfLs97hShC3Yx6jy1qGAXVWyzIkbKiRpGSN15MIxUq0jUAtKHaqjhlwBmL3JZ3ZVEgXGQe-nenronMNgpeJdJfyFxGHRM64-wzgRJjAeuEW7baKnZgb-cbKq65-irSnhT7lwB1Igtc1C2ry2iTA-kcgqBncYFzyL0svFpbyl-FUdfxhJXQ"/></div><div><div class="sb-n" id="sbName">FrienDamas</div><div class="sb-e" id="sbElo">ELO 2150</div></div></div>
     <nav class="sb-nav">
-      <a class="act" href="#"><span class="material-symbols-outlined">leaderboard</span> Stats</a>
-      <a href="#"><span class="material-symbols-outlined">group</span> Social</a>
+      <a id="sbStats" href="#"><span class="material-symbols-outlined">leaderboard</span> Stats</a>
+      <a id="sbSocial" href="#"><span class="material-symbols-outlined">group</span> Social</a>
       <div class="sb-sep"></div>
       <div style="padding:4px 10px 0;font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted)">Partida</div>
       <button id="btnDraw" class="btn-sbg" style="margin:6px 0 2px"><span class="material-symbols-outlined" style="font-size:16px">handshake</span> Proponer Tablas</button>
@@ -504,6 +522,35 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   </div>
 </div>
 
+<!-- ─── Ranking Modal ─── -->
+<div class="modal-overlay" id="rankingModal">
+  <div class="modal-card">
+    <div class="modal-hdr"><h2><span class="material-symbols-outlined">leaderboard</span> Ranking</h2><button class="modal-close" id="rankingModalClose"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="rank-loading" id="rankLoading">Cargando...</div>
+    <div class="rank-list" id="rankList"></div>
+  </div>
+</div>
+
+<!-- ─── Social Modal ─── -->
+<div class="modal-overlay" id="socialModal">
+  <div class="modal-card">
+    <div class="modal-hdr"><h2><span class="material-symbols-outlined">group</span> Social</h2><button class="modal-close" id="socialModalClose"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="social-add">
+      <input type="text" id="socialFriendInput" class="name-input" placeholder="Añadir amigo por usuario" maxlength="16">
+      <button class="btn-sbg" id="btnAddFriend">Añadir</button>
+    </div>
+    <div class="social-auth-msg" id="socialAuthMsg" style="display:none">Inicia sesión para ver tus amigos</div>
+    <div id="socialFriendsArea" style="display:none">
+      <div class="social-sec-t">Amigos</div>
+      <div class="social-list" id="socialFriendsList"></div>
+      <div class="social-sec-t">Solicitudes</div>
+      <div class="social-list" id="socialPendingList"></div>
+      <div class="social-sec-t">Enviadas</div>
+      <div class="social-list" id="socialOutList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   'use strict';
@@ -593,6 +640,17 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const authEloLabel = document.getElementById('authEloLabel');
   const sbName = document.getElementById('sbName');
   const sbElo = document.getElementById('sbElo');
+  const rankingModal = document.getElementById('rankingModal');
+  const rankList = document.getElementById('rankList');
+  const rankLoading = document.getElementById('rankLoading');
+  const socialModal = document.getElementById('socialModal');
+  const socialAuthMsg = document.getElementById('socialAuthMsg');
+  const socialFriendsArea = document.getElementById('socialFriendsArea');
+  const socialFriendsList = document.getElementById('socialFriendsList');
+  const socialPendingList = document.getElementById('socialPendingList');
+  const socialOutList = document.getElementById('socialOutList');
+  const socialFriendInput = document.getElementById('socialFriendInput');
+  const btnAddFriend = document.getElementById('btnAddFriend');
 
   // Socket.io
   const SERVER_URL = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:')
@@ -1230,6 +1288,140 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     reconnectSocket();
   }
 
+  async function openRanking(){
+    rankingModal.classList.add('sh');
+    rankLoading.style.display = 'block';
+    rankList.innerHTML = '';
+    try {
+      const res = await fetch(API_BASE + '/api/ranking?limit=50');
+      const data = await res.json();
+      rankLoading.style.display = 'none';
+      if(!res.ok || !data.ranking){ rankList.innerHTML = '<div class="social-empty">Error al cargar ranking</div>'; return; }
+      rankList.innerHTML = '';
+      data.ranking.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'rank-row' + (authUser && r.id === authUser.id ? ' me' : '');
+        const pos = document.createElement('div'); pos.className = 'rank-pos'; pos.textContent = '#' + r.rank;
+        const un = document.createElement('div'); un.className = 'rank-un'; un.textContent = r.username;
+        const wl = document.createElement('div'); wl.className = 'rank-wl'; wl.textContent = `${r.wins}W ${r.losses}L`;
+        const elo = document.createElement('div'); elo.className = 'rank-elo'; elo.textContent = r.elo;
+        row.appendChild(pos); row.appendChild(un); row.appendChild(wl); row.appendChild(elo);
+        rankList.appendChild(row);
+      });
+    } catch(e) {
+      rankLoading.style.display = 'none';
+      rankList.innerHTML = '<div class="social-empty">Error de conexión</div>';
+    }
+  }
+
+  function friendRow(f){
+    const row = document.createElement('div');
+    row.className = 'social-row';
+    const dot = document.createElement('div');
+    dot.className = 'social-dot ' + (f.online ? 'on' : 'off');
+    const un = document.createElement('div'); un.className = 'social-un'; un.textContent = f.username;
+    const elo = document.createElement('div'); elo.className = 'social-elo'; elo.textContent = 'ELO ' + f.elo;
+    row.appendChild(dot); row.appendChild(un); row.appendChild(elo);
+    if(f.online){
+      const btn = document.createElement('button');
+      btn.className = 'btn-sbg'; btn.style.cssText = 'padding:5px 10px;font-size:11px';
+      btn.textContent = 'Invitar';
+      btn.addEventListener('click', () => inviteFriend(f.username));
+      row.appendChild(btn);
+    }
+    return row;
+  }
+
+  async function openSocial(){
+    socialModal.classList.add('sh');
+    if(!authToken){
+      socialAuthMsg.style.display = 'block';
+      socialFriendsArea.style.display = 'none';
+      return;
+    }
+    socialAuthMsg.style.display = 'none';
+    socialFriendsArea.style.display = 'block';
+    try {
+      const res = await fetch(API_BASE + '/api/friends', { headers: { Authorization: 'Bearer ' + authToken } });
+      const data = await res.json();
+      if(!res.ok){ socialFriendsList.innerHTML = '<div class="social-empty">Error al cargar amigos</div>'; return; }
+      socialFriendsList.innerHTML = '';
+      if(!data.friends || !data.friends.length) socialFriendsList.innerHTML = '<div class="social-empty">Aún no tienes amigos</div>';
+      else data.friends.forEach(f => socialFriendsList.appendChild(friendRow(f)));
+      socialPendingList.innerHTML = '';
+      if(!data.pendingIn || !data.pendingIn.length) socialPendingList.innerHTML = '<div class="social-empty">Sin solicitudes</div>';
+      else data.pendingIn.forEach(f => {
+        const row = friendRow(f);
+        const btn = document.createElement('button');
+        btn.className = 'btn-sbg'; btn.style.cssText = 'padding:5px 10px;font-size:11px';
+        btn.textContent = 'Aceptar';
+        btn.addEventListener('click', async () => {
+          await fetch(API_BASE + '/api/friends/accept', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+            body: JSON.stringify({ friendId: f.id })
+          });
+          openSocial();
+        });
+        row.appendChild(btn);
+        socialPendingList.appendChild(row);
+      });
+      socialOutList.innerHTML = '';
+      if(!data.pendingOut || !data.pendingOut.length) socialOutList.innerHTML = '<div class="social-empty">Sin solicitudes enviadas</div>';
+      else data.pendingOut.forEach(id => {
+        const d = document.createElement('div');
+        d.className = 'social-empty'; d.textContent = 'Solicitud pendiente de usuario #' + id;
+        socialOutList.appendChild(d);
+      });
+    } catch(e) {
+      socialFriendsList.innerHTML = '<div class="social-empty">Error de conexión</div>';
+    }
+  }
+
+  async function addFriend(){
+    if(!authToken){ showToast('Aviso','Inicia sesión para añadir amigos','⚠️'); return; }
+    const username = socialFriendInput.value.trim();
+    if(!username) return;
+    try {
+      const res = await fetch(API_BASE + '/api/friends/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if(!res.ok){ showToast('Error', data.error || 'No se pudo enviar', '⚠️'); return; }
+      socialFriendInput.value = '';
+      showToast('Solicitud enviada', 'A ' + username, '✅');
+    } catch(e) {
+      showToast('Error', 'Error de conexión', '⚠️');
+    }
+  }
+
+  async function inviteFriend(username){
+    if(!socket || !socket.connected){ showToast('Error','No hay conexión al servidor','⚠️'); return; }
+    myOnlineName = username;
+    socket.emit('create_room', { playerName: myOnlineName, p1Color }, (res) => {
+      onlineRoomCode = res.code;
+      myOnlineColor = 'GOLD';
+      gameMode = 'online';
+      gameModeOnline = false;
+      socialModal.classList.remove('sh');
+      openMenu();
+      roomCodeLabel.textContent = res.code;
+      roomCodeDisplay.style.display = 'block';
+      roomCodeInput.style.display = 'none';
+      nameInput.style.display = 'none';
+      document.getElementById('onlineBtnRow').style.display = 'none';
+      resetCoinUI();
+      btnStartOnline.textContent = 'Esperando oponente...';
+      btnStartOnline.style.display = 'block';
+      btnStartOnline.disabled = true;
+      btnStartOnline.dataset.ready = 'false';
+      updateOnlineStatus('Esperando oponente...', 'yellow');
+      roomBadgeCode.textContent = res.code;
+      showToast('Sala creada', 'Código ' + res.code + ' — compártelo con ' + username, '🎮');
+    });
+  }
+
   function connectSocket(){
     if(socket && socket.connected) return;
     updateOnlineStatus('Conectando...', 'yellow');
@@ -1395,6 +1587,17 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     rulesModal.classList.remove('sh');
   });
   rulesModal?.addEventListener('click', (e) => { if(e.target === rulesModal) rulesModal.classList.remove('sh'); });
+
+  // ─── Ranking & Social Modals ───
+  document.getElementById('navRanking')?.addEventListener('click', (e) => { e.preventDefault(); openRanking(); });
+  document.getElementById('sbStats')?.addEventListener('click', (e) => { e.preventDefault(); openRanking(); });
+  document.getElementById('rankingModalClose')?.addEventListener('click', () => rankingModal.classList.remove('sh'));
+  rankingModal?.addEventListener('click', (e) => { if(e.target === rankingModal) rankingModal.classList.remove('sh'); });
+  document.getElementById('sbSocial')?.addEventListener('click', (e) => { e.preventDefault(); openSocial(); });
+  document.getElementById('socialModalClose')?.addEventListener('click', () => socialModal.classList.remove('sh'));
+  socialModal?.addEventListener('click', (e) => { if(e.target === socialModal) socialModal.classList.remove('sh'); });
+  btnAddFriend.addEventListener('click', addFriend);
+  socialFriendInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') addFriend(); });
 
   // ─── Hamburger (mobile sidebar) ───
   const sbDrawer = document.getElementById('sbDrawer');
