@@ -268,6 +268,17 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
 /* ─── Online mode ─── */
 .online-setup{display:flex;flex-direction:column;gap:12px;padding:10px 0;width:100%}
+.auth-sec{display:flex;flex-direction:column;gap:10px;padding:10px 0;width:100%;border-top:1px solid var(--border);margin-top:2px}
+.auth-tabs{display:flex;gap:8px}
+.auth-tabs .btn-sgh{flex:1;font-size:12px;padding:8px 6px}
+.auth-tabs .btn-sgh.act{background:rgba(255,215,0,0.12);border-color:var(--gold);color:var(--gold)}
+.auth-fields{display:flex;flex-direction:column;gap:8px}
+.auth-err{font-size:12px;color:#ff6b6b;text-align:center}
+.auth-user{display:flex;align-items:center;gap:10px;width:100%}
+.auth-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(135deg,#c9a227,#f2ca50);color:#1a1a2e;flex-shrink:0}
+.auth-ui{flex:1;min-width:0}
+.auth-un{font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auth-e{font-size:11px;color:var(--gold)}
 .online-setup input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;text-align:center}
 .online-setup input:focus{border-color:var(--gold)}
 .online-setup input.code-input{letter-spacing:2px;text-transform:uppercase}
@@ -308,7 +319,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 </header>
 <div class="app">
     <aside class="sb">
-    <div class="sb-prof"><div class="sb-av"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuANjqlmxWSXrJ8tvXvyevjQWCqaXKkn6OXlflQUH7f-uK-lQgzd1hJVepjIwAfZnIBrpYoojfLs97hShC3Yx6jy1qGAXVWyzIkbKiRpGSN15MIxUq0jUAtKHaqjhlwBmL3JZ3ZVEgXGQe-nenronMNgpeJdJfyFxGHRM64-wzgRJjAeuEW7baKnZgb-cbKq65-irSnhT7lwB1Igtc1C2ry2iTA-kcgqBncYFzyL0svFpbyl-FUdfxhJXQ"/></div><div><div class="sb-n">FrienDamas</div><div class="sb-e">ELO 2150</div></div></div>
+    <div class="sb-prof"><div class="sb-av"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuANjqlmxWSXrJ8tvXvyevjQWCqaXKkn6OXlflQUH7f-uK-lQgzd1hJVepjIwAfZnIBrpYoojfLs97hShC3Yx6jy1qGAXVWyzIkbKiRpGSN15MIxUq0jUAtKHaqjhlwBmL3JZ3ZVEgXGQe-nenronMNgpeJdJfyFxGHRM64-wzgRJjAeuEW7baKnZgb-cbKq65-irSnhT7lwB1Igtc1C2ry2iTA-kcgqBncYFzyL0svFpbyl-FUdfxhJXQ"/></div><div><div class="sb-n" id="sbName">FrienDamas</div><div class="sb-e" id="sbElo">ELO 2150</div></div></div>
     <nav class="sb-nav">
       <a class="act" href="#"><span class="material-symbols-outlined">leaderboard</span> Stats</a>
       <a href="#"><span class="material-symbols-outlined">group</span> Social</a>
@@ -326,6 +337,25 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       <div class="menu-card">
         <div class="m-icon"><span class="material-symbols-outlined" style="font-variation-settings:'FILL'1;font-size:32px">check</span></div>
         <div>    <div class="m-title">FrienDamas</div><div class="m-sub">Configura tu partida</div></div>
+        <div class="auth-sec" id="authSection" style="display:none">
+          <div id="authLoginForm">
+            <div class="auth-tabs">
+              <button class="btn-sgh act" id="btnAuthLoginTab">Iniciar sesión</button>
+              <button class="btn-sgh" id="btnAuthRegisterTab">Registrarse</button>
+            </div>
+            <div class="auth-fields">
+              <input type="text" id="authUsername" class="name-input" placeholder="Usuario" maxlength="16" autocomplete="username">
+              <input type="password" id="authPassword" class="name-input" placeholder="Contraseña (mín. 6)" maxlength="72" autocomplete="current-password">
+            </div>
+            <button class="btn-sbg" id="btnAuthSubmit">Iniciar sesión</button>
+            <div class="auth-err" id="authError" style="display:none"></div>
+          </div>
+          <div class="auth-user" id="authUserBar" style="display:none">
+            <div class="auth-av">♛</div>
+            <div class="auth-ui"><div class="auth-un" id="authUsernameLabel">-</div><div class="auth-e" id="authEloLabel">ELO 1200</div></div>
+            <button class="btn-sgh" id="btnAuthLogout">Salir</button>
+          </div>
+        </div>
         <div class="mode-grp">
           <div class="mode-b act" data-mode="ai" id="modeAI"><div class="mode-b-icon">🤖</div><div class="mode-b-l">vs IA</div><div class="mode-b-d">Juega contra la computadora</div></div>
           <div class="mode-b" data-mode="local" id="modeLocal"><div class="mode-b-icon">👥</div><div class="mode-b-l">2 Jugadores</div><div class="mode-b-d">Comparte el mismo dispositivo</div></div>
@@ -549,12 +579,30 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const reconnectCodeInput = document.getElementById('reconnectCodeInput');
   const reconnectNameInput = document.getElementById('reconnectNameInput');
   const btnReconnect = document.getElementById('btnReconnect');
+  const authSection = document.getElementById('authSection');
+  const authLoginForm = document.getElementById('authLoginForm');
+  const authUserBar = document.getElementById('authUserBar');
+  const authUsername = document.getElementById('authUsername');
+  const authPassword = document.getElementById('authPassword');
+  const btnAuthSubmit = document.getElementById('btnAuthSubmit');
+  const btnAuthLoginTab = document.getElementById('btnAuthLoginTab');
+  const btnAuthRegisterTab = document.getElementById('btnAuthRegisterTab');
+  const btnAuthLogout = document.getElementById('btnAuthLogout');
+  const authError = document.getElementById('authError');
+  const authUsernameLabel = document.getElementById('authUsernameLabel');
+  const authEloLabel = document.getElementById('authEloLabel');
+  const sbName = document.getElementById('sbName');
+  const sbElo = document.getElementById('sbElo');
 
   // Socket.io
   const SERVER_URL = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:')
     ? 'http://localhost:3001'
     : 'https://friendamas-server.onrender.com/';
+  const API_BASE = SERVER_URL.replace(/\/$/, '');
   let socket = null;
+  let authToken = localStorage.getItem('fd_token') || null;
+  let authUser = null;
+  let authMode = 'login';
   let myOnlineColor = null;
   let myOnlineName = 'Jugador';
   let onlineOpponentName = 'Oponente';
@@ -1092,10 +1140,100 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     if(span) span.textContent = text;
   }
 
+  function setAuthUI(){
+    authSection.style.display = 'flex';
+    if(authUser){
+      authLoginForm.style.display = 'none';
+      authUserBar.style.display = 'flex';
+      authUsernameLabel.textContent = authUser.username;
+      authEloLabel.textContent = 'ELO ' + authUser.elo;
+      sbName.textContent = authUser.username;
+      sbElo.textContent = 'ELO ' + authUser.elo;
+    } else {
+      authLoginForm.style.display = 'flex';
+      authUserBar.style.display = 'none';
+      authError.style.display = 'none';
+      sbName.textContent = 'FrienDamas';
+      sbElo.textContent = 'ELO 2150';
+      btnAuthSubmit.textContent = authMode === 'register' ? 'Registrarse' : 'Iniciar sesión';
+      btnAuthLoginTab.classList.toggle('act', authMode === 'login');
+      btnAuthRegisterTab.classList.toggle('act', authMode === 'register');
+    }
+  }
+
+  function showAuthError(msg){
+    authError.textContent = msg;
+    authError.style.display = 'block';
+  }
+
+  function reconnectSocket(){
+    if(socket){
+      socket.auth = { token: authToken };
+      socket.disconnect();
+      socket.connect();
+    } else {
+      connectSocket();
+    }
+  }
+
+  async function authSubmit(){
+    const username = authUsername.value.trim();
+    const password = authPassword.value;
+    if(!username || !password){ showAuthError('Ingresa usuario y contraseña'); return; }
+    btnAuthSubmit.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/api/auth/' + (authMode === 'register' ? 'register' : 'login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError(data.error || 'Error'); return; }
+      authToken = data.token;
+      authUser = data.user;
+      localStorage.setItem('fd_token', authToken);
+      authPassword.value = '';
+      setAuthUI();
+      reconnectSocket();
+      updateOnlineStatus('Conectado', 'green');
+    } catch(e) {
+      showAuthError('Error de conexión');
+    } finally {
+      btnAuthSubmit.disabled = false;
+    }
+  }
+
+  async function restoreSession(){
+    setAuthUI();
+    if(!authToken) return;
+    try {
+      const res = await fetch(API_BASE + '/api/auth/me', { headers: { Authorization: 'Bearer ' + authToken } });
+      const data = await res.json();
+      if(res.ok && data.user){
+        authUser = data.user;
+        setAuthUI();
+      } else {
+        authToken = null;
+        localStorage.removeItem('fd_token');
+        setAuthUI();
+      }
+    } catch(e) {
+      setAuthUI();
+    }
+  }
+
+  function logout(){
+    authToken = null;
+    authUser = null;
+    localStorage.removeItem('fd_token');
+    setAuthUI();
+    reconnectSocket();
+  }
+
   function connectSocket(){
     if(socket && socket.connected) return;
     updateOnlineStatus('Conectando...', 'yellow');
-    socket = io(SERVER_URL);
+    socket = io(SERVER_URL, { auth: { token: authToken } });
     socket.on('connect', () => {
       onlineConnected = true;
       updateOnlineStatus('Conectado', 'green');
@@ -1311,6 +1449,14 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     document.getElementById('btnNewGame').addEventListener('click',openMenu);
     document.getElementById('btnResign').addEventListener('click',resign);
     document.getElementById('btnDraw').addEventListener('click',draw);
+
+    // Auth
+    restoreSession();
+    btnAuthLoginTab.addEventListener('click',()=>{ authMode='login'; setAuthUI(); });
+    btnAuthRegisterTab.addEventListener('click',()=>{ authMode='register'; setAuthUI(); });
+    btnAuthSubmit.addEventListener('click',authSubmit);
+    btnAuthLogout.addEventListener('click',logout);
+    authPassword.addEventListener('keydown',(e)=>{ if(e.key==='Enter') authSubmit(); });
 
     // Online buttons
     btnCreateRoom.addEventListener('click',()=>{
