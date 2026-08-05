@@ -166,6 +166,10 @@ async function setPlayerOffline(socketId) {
   return dbRun('UPDATE players SET socket_id = NULL, connected = 0 WHERE socket_id = $1', [socketId]);
 }
 
+async function updatePlayerColor(playerId, color) {
+  return dbRun('UPDATE players SET color = $1 WHERE id = $2', [color, playerId]);
+}
+
 async function insertMove(roomId, playerColor, fromRow, fromCol, toRow, toCol, captures) {
   return dbRun('INSERT INTO moves (room_id, player_color, from_row, from_col, to_row, to_col, captures) VALUES ($1, $2, $3, $4, $5, $6, $7)',
     [roomId, playerColor, fromRow, fromCol, toRow, toCol, captures]);
@@ -191,7 +195,7 @@ async function loadRoomToCache(code) {
   if (!room) return null;
   const players = await getPlayers(room.id);
   const existing = activeRooms.get(code) || {};
-  const entry = { room, players, code, themeMap: existing.themeMap || {} };
+  const entry = { room, players, code, themeMap: existing.themeMap || {}, themesBySocket: existing.themesBySocket || {} };
   activeRooms.set(code, entry);
   return entry;
 }
@@ -219,7 +223,7 @@ io.on('connection', (socket) => {
     socket.playerName = playerName;
     const room = await getRoom(code);
     const players = await getPlayers(roomId);
-    activeRooms.set(code, { room, players, code, themeMap: { GOLD: p1Color } });
+    activeRooms.set(code, { room, players, code, themeMap: { GOLD: p1Color }, themesBySocket: { [socket.id]: p1Color } });
     callback({ code, p2Color: null });
     console.log(`Sala ${code} creada por ${playerName}`);
   });
@@ -256,7 +260,7 @@ io.on('connection', (socket) => {
     const updatedPlayers = await getPlayers(room.id);
     const entry = await loadRoomToCache(code);
     const roomData = getRoomData(code);
-    if (roomData) { roomData.themeMap = roomData.themeMap || {}; roomData.themeMap.BLACK = joinerTheme; roomData.themeMap.GOLD = roomData.themeMap.GOLD ?? 0; activeRooms.set(code, roomData); }
+    if (roomData) { roomData.themeMap = roomData.themeMap || {}; roomData.themeMap.BLACK = joinerTheme; roomData.themeMap.GOLD = roomData.themeMap.GOLD ?? 0; roomData.themesBySocket = roomData.themesBySocket || {}; roomData.themesBySocket[socket.id] = joinerTheme; activeRooms.set(code, roomData); }
     socket.join(code);
     socket.roomCode = code;
     socket.playerName = name;
@@ -332,6 +336,57 @@ io.on('connection', (socket) => {
     io.to(code).emit('draw_response', { accept });
   });
 
+  socket.on('coin_flip', () => {
+    const code = socket.roomCode;
+    if (!code) return;
+    const roomData = activeRooms.get(code);
+    if (!roomData || roomData.coinState || roomData.coinWinnerSocketId) return;
+    const connected = roomData.players.filter(p => p.connected);
+    if (connected.length < 2) return;
+    const caller = connected[Math.floor(Math.random() * connected.length)];
+    roomData.coinState = { callerSocketId: caller.socket_id };
+    io.to(code).emit('coin_call', { callerSocketId: caller.socket_id, callerName: caller.name });
+  });
+
+  socket.on('coin_call', ({ call }) => {
+    const code = socket.roomCode;
+    if (!code) return;
+    const roomData = activeRooms.get(code);
+    if (!roomData || !roomData.coinState) return;
+    if (roomData.coinState.callerSocketId !== socket.id) return;
+    const caller = roomData.players.find(p => p.socket_id === socket.id);
+    const other = roomData.players.find(p => p.socket_id !== socket.id);
+    if (!caller || !other) return;
+    const result = Math.random() < 0.5 ? 'cara' : 'sello';
+    const winner = call === result ? caller : other;
+    roomData.coinState = null;
+    roomData.coinWinnerSocketId = winner.socket_id;
+    io.to(code).emit('coin_result', { result, winnerSocketId: winner.socket_id, winnerName: winner.name });
+  });
+
+  socket.on('coin_choice', async ({ start }) => {
+    const code = socket.roomCode;
+    if (!code) return;
+    const roomData = activeRooms.get(code);
+    if (!roomData || roomData.coinWinnerSocketId !== socket.id) return;
+    const winner = roomData.players.find(p => p.socket_id === socket.id);
+    const other = roomData.players.find(p => p.socket_id !== socket.id);
+    if (!winner || !other) return;
+    const goldP = start ? winner : other;
+    const blackP = start ? other : winner;
+    await updatePlayerColor(goldP.id, 'GOLD');
+    await updatePlayerColor(blackP.id, 'BLACK');
+    goldP.color = 'GOLD'; blackP.color = 'BLACK';
+    if (roomData.themesBySocket && roomData.themeMap) {
+      roomData.themeMap.GOLD = roomData.themesBySocket[goldP.socket_id] ?? 0;
+      roomData.themeMap.BLACK = roomData.themesBySocket[blackP.socket_id] ?? -1;
+    }
+    roomData.coinWinnerSocketId = null;
+    roomData.coinState = null;
+    await updateRoomStatus(code, 'playing');
+    io.to(code).emit('game_start', { players: roomData.players, turn: 'GOLD', themeMap: roomData.themeMap || {} });
+  });
+
   socket.on('disconnect', async () => {
     const code = socket.roomCode;
     console.log('Desconectado:', socket.id, 'Sala:', code);
@@ -341,6 +396,8 @@ io.on('connection', (socket) => {
       if (roomData) {
         const player = roomData.players.find(p => p.socket_id === socket.id);
         if (player) player.connected = 0;
+        if (roomData.coinState && roomData.coinState.callerSocketId === socket.id) { roomData.coinState = null; io.to(code).emit('coin_cancel'); }
+        if (roomData.coinWinnerSocketId === socket.id) { roomData.coinWinnerSocketId = null; io.to(code).emit('coin_cancel'); }
         const anyConnected = roomData.players.some(p => p.connected);
         if (!anyConnected) {
           setTimeout(async () => {

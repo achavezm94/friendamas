@@ -52,8 +52,11 @@ Doble motor vía `DATABASE_URL`:
 | `join_room` | recibe `{code, name, p1Color}` | asigna BLACK; si nombre existe con `connected===0` → reconexión; `connected===1` → error "Nombre ya en uso"; si colores iguales → BLACK=-1 |
 | `reconnect_room` | `{code, name}` | devuelve estado completo: players, turn, board_state, gold/black_time, lastMove, moves, chat, themeMap |
 | `make_move` | data con board_state, next_turn, capturas, tiempos | persiste board + tiempos en DB, emite `opponent_move` |
+| `coin_flip` | | elige llamador al azar entre conectados, emite `coin_call` |
+| `coin_call` | `{call: 'cara'\|'sello'}` | lanza moneda, emite `coin_result` con ganador |
+| `coin_choice` | `{start: bool}` | el ganador decide quién es GOLD, actualiza colores + themeMap, emite `game_start` |
 | `resign` / `draw_offer` / `draw_response` | | fin de partida / tablas |
-| `disconnect` | | marca offline, elimina sala si nadie conectado tras 5 min |
+| `disconnect` | | marca offline, limpia estado de moneda (emite `coin_cancel`), elimina sala si nadie conectado tras 5 min |
 
 ## Frontend — Conceptos clave (front/damas.html)
 
@@ -90,9 +93,18 @@ Doble motor vía `DATABASE_URL`:
 - Dificultad: `hard` → presupuesto 500ms / profundidad 10; `medium` → 160ms / 5
 - `aiMove()` se dispara cuando `turn===BLACK`; listener `visibilitychange` la re-dispara al desbloquear el teléfono
 
+### Lanzamiento de moneda (online)
+- Al unirse el oponente, `btnStartOnline` = "Lanzar moneda 🪙" (tanto host como joiner pueden lanzar)
+- `coin_call`: el llamador ve botones Cara/Sello (`coinPickRow`); el rival ve "Esperando que X elija..."
+- `coin_result`: el ganador ve "Iniciar" / "Rival inicia" (`coinWinnerRow`); asigna colores vía `coin_choice {start}`
+- `game_start` recalcula `p1Color`/`p2Color` desde `data.themeMap` según `myOnlineColor` (patrón del reconnect)
+- Desconexión durante la moneda → servidor emite `coin_cancel` y se vuelve al botón de lanzar
+- `themesBySocket` en cache guarda el tema de cada jugador para reconstruir `themeMap` tras el swap de colores
+
 ### Reconexión online
 - Botón "Reconectar" en el menú (código + nombre)
 - Cliente restaura: board_state, turn, lastMove, gold/black_time, chat, themeMap, roomBadge
+- Si `res.moves` está vacío → la partida no empezó: vuelve a la fase de moneda en vez de iniciar
 - `gameMode='online'`, `gameModeOnline=true`, luego `applyTheme()` y `startT()`
 
 ## Variables importantes del frontend

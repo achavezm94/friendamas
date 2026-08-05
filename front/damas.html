@@ -352,6 +352,17 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
             <div class="hint">Comparte este código con tu oponente</div>
           </div>
           <button class="btn-st" id="btnStartOnline" style="display:none">Esperando oponente...</button>
+          <div id="coinFlipArea" style="display:none;width:100%;flex-direction:column;gap:8px;padding:8px 0">
+            <div id="coinFlipStatus" style="font-size:13px;color:var(--text-dim);text-align:center">Lanzando moneda...</div>
+            <div class="row" id="coinPickRow" style="display:none;gap:8px">
+              <button class="btn-sbg" id="btnCoinCara" style="flex:1">🪙 Cara</button>
+              <button class="btn-sbg" id="btnCoinSello" style="flex:1">🪙 Sello</button>
+            </div>
+            <div class="row" id="coinWinnerRow" style="display:none;gap:8px">
+              <button class="btn-sbg" id="btnCoinStart" style="flex:1">▶ Iniciar</button>
+              <button class="btn-sbg" id="btnCoinPass" style="flex:1">Rival inicia</button>
+            </div>
+          </div>
           <div id="reconnectSection" style="display:none;flex-direction:column;gap:8px;padding:8px 0;border-top:1px solid var(--border);margin-top:4px">
             <div style="font-size:12px;color:var(--gold);font-weight:600;text-align:center">¿Ya tienes una sala?</div>
             <input type="text" id="reconnectCodeInput" class="code-input" placeholder="Código de sala" maxlength="6">
@@ -521,6 +532,14 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const roomBadge = document.getElementById('roomBadge');
   const roomBadgeCode = document.getElementById('roomBadgeCode');
   const btnStartOnline = document.getElementById('btnStartOnline');
+  const coinFlipArea = document.getElementById('coinFlipArea');
+  const coinFlipStatus = document.getElementById('coinFlipStatus');
+  const coinPickRow = document.getElementById('coinPickRow');
+  const btnCoinCara = document.getElementById('btnCoinCara');
+  const btnCoinSello = document.getElementById('btnCoinSello');
+  const coinWinnerRow = document.getElementById('coinWinnerRow');
+  const btnCoinStart = document.getElementById('btnCoinStart');
+  const btnCoinPass = document.getElementById('btnCoinPass');
   const chatMessages = document.getElementById('chatMessages');
   const chatInput = document.getElementById('chatInput');
   const chatSend = document.getElementById('chatSend');
@@ -1014,6 +1033,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     nameInput.value='Jugador';
     document.getElementById('onlineBtnRow').style.display='flex';
     btnStartOnline.style.display='none';
+    resetCoinUI();
     reconnectSection.style.display=gameMode==='online'?'flex':'none';
     reconnectCodeInput.value='';
     reconnectNameInput.value='';
@@ -1055,6 +1075,16 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   }
 
   // ─── Online functions ───
+  function resetCoinUI(){
+    coinFlipArea.style.display = 'none';
+    coinPickRow.style.display = 'none';
+    coinWinnerRow.style.display = 'none';
+    coinFlipStatus.textContent = 'Lanzando moneda...';
+    btnStartOnline.textContent = 'Esperando oponente...';
+    btnStartOnline.disabled = true;
+    btnStartOnline.dataset.ready = 'false';
+  }
+
   function updateOnlineStatus(text, cls){
     const dot = onlineStatus.querySelector('.dot');
     if(dot){ dot.className = 'dot ' + cls; }
@@ -1084,7 +1114,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       const opp = data.players.find(p => p.socket_id !== socket.id);
       if(opp){ oppName.textContent = opp.name; onlineOpponentName = opp.name; }
       oppTitle.textContent = 'Online';
-      btnStartOnline.textContent = '¡Comenzar!';
+      btnStartOnline.textContent = 'Lanzar moneda 🪙';
       btnStartOnline.style.display = 'block';
       btnStartOnline.disabled = false;
       btnStartOnline.dataset.ready = 'true';
@@ -1094,9 +1124,49 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     });
     socket.on('game_start', (data) => {
       const me = data.players.find(p => p.socket_id === socket.id);
-      myOnlineColor = me.color;
+      if(me) myOnlineColor = me.color;
+      if(data.themeMap){
+        if(myOnlineColor === 'GOLD'){ p1Color = data.themeMap.GOLD ?? p1Color; p2Color = data.themeMap.BLACK ?? p2Color; }
+        else{ p1Color = data.themeMap.BLACK ?? p1Color; p2Color = data.themeMap.GOLD ?? p2Color; }
+      }
       gameModeOnline = true;
+      resetCoinUI();
       startGame();
+    });
+    socket.on('coin_call', (data) => {
+      if(data.callerSocketId === socket.id){
+        btnStartOnline.style.display = 'none';
+        coinFlipArea.style.display = 'flex';
+        coinFlipStatus.textContent = 'La moneda se lanzó al aire... Elige Cara o Sello';
+        coinPickRow.style.display = 'flex';
+        coinWinnerRow.style.display = 'none';
+      } else {
+        btnStartOnline.disabled = true;
+        btnStartOnline.textContent = `Esperando que ${data.callerName} elija Cara o Sello...`;
+      }
+    });
+    socket.on('coin_result', (data) => {
+      const isMe = data.winnerSocketId === socket.id;
+      coinFlipArea.style.display = 'flex';
+      btnStartOnline.style.display = 'none';
+      coinPickRow.style.display = 'none';
+      if(isMe){
+        coinFlipStatus.textContent = `¡La moneda cayó ${data.result === 'cara' ? 'CARA' : 'SELLO'} y tú ganas!`;
+        coinWinnerRow.style.display = 'flex';
+      } else {
+        coinFlipStatus.textContent = `La moneda cayó ${data.result === 'cara' ? 'CARA' : 'SELLO'}. Ganó ${data.winnerName}, esperando su decisión...`;
+        coinWinnerRow.style.display = 'none';
+      }
+    });
+    socket.on('coin_cancel', () => {
+      coinFlipArea.style.display = 'none';
+      coinPickRow.style.display = 'none';
+      coinWinnerRow.style.display = 'none';
+      btnStartOnline.textContent = 'Lanzar moneda 🪙';
+      btnStartOnline.style.display = 'block';
+      btnStartOnline.disabled = false;
+      btnStartOnline.dataset.ready = 'true';
+      updateOnlineStatus('Oponente desconectado', 'yellow');
     });
     socket.on('opponent_move', (data) => {
       if(gameOver || !gameActive) return;
@@ -1275,9 +1345,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         onlineRoomCode = code;
         roomCodeInput.style.display = 'none';
         document.getElementById('onlineBtnRow').style.display = 'none';
-        btnStartOnline.textContent = '¡Comenzar!';
+        btnStartOnline.textContent = 'Lanzar moneda 🪙';
         btnStartOnline.style.display = 'block';
         btnStartOnline.disabled = false;
+        btnStartOnline.dataset.ready = 'true';
         const me = res.players.find(p => p.socket_id === socket.id);
         if(me) myOnlineColor = me.color;
         const opp = res.players.find(p => p.socket_id !== socket.id);
@@ -1288,15 +1359,37 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
           if(res.themeMap.BLACK !== undefined) p1Color = res.themeMap.BLACK;
         }
         gameModeOnline = true;
-        startGame();
+        applyTheme(p1Color, p2Color);
       });
     });
 
     btnStartOnline.addEventListener('click',()=>{
       if(btnStartOnline.dataset.ready === 'true'){
-        gameModeOnline = true;
-        startGame();
+        btnStartOnline.disabled = true;
+        btnStartOnline.textContent = 'Lanzando moneda...';
+        socket.emit('coin_flip');
       }
+    });
+
+    btnCoinCara.addEventListener('click',()=>{
+      socket.emit('coin_call', { call: 'cara' });
+      coinPickRow.style.display = 'none';
+      coinFlipStatus.textContent = 'Lanzando la moneda...';
+    });
+    btnCoinSello.addEventListener('click',()=>{
+      socket.emit('coin_call', { call: 'sello' });
+      coinPickRow.style.display = 'none';
+      coinFlipStatus.textContent = 'Lanzando la moneda...';
+    });
+    btnCoinStart.addEventListener('click',()=>{
+      socket.emit('coin_choice', { start: true });
+      coinWinnerRow.style.display = 'none';
+      coinFlipStatus.textContent = 'Iniciando partida...';
+    });
+    btnCoinPass.addEventListener('click',()=>{
+      socket.emit('coin_choice', { start: false });
+      coinWinnerRow.style.display = 'none';
+      coinFlipStatus.textContent = 'Iniciando partida...';
     });
 
     // Reconnect
@@ -1319,6 +1412,21 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
           else{ p1Color = res.themeMap.BLACK ?? p1Color; p2Color = res.themeMap.GOLD ?? p2Color; }
         }
         applyTheme(p1Color, p2Color);
+
+        const started = res.moves && res.moves.length > 0;
+        if(!started){
+          nameInput.style.display = 'none';
+          document.getElementById('onlineBtnRow').style.display = 'none';
+          btnStartOnline.textContent = 'Lanzar moneda 🪙';
+          btnStartOnline.style.display = 'block';
+          btnStartOnline.disabled = false;
+          btnStartOnline.dataset.ready = 'true';
+          roomCodeDisplay.style.display = 'none';
+          updateOnlineStatus('Conectado', 'green');
+          showToast('Reconectado', 'Aún no se ha iniciado la partida', '🪙');
+          return;
+        }
+
         menuOv.classList.add('hide');
         gameModeOnline = true;
         gameActive = true;
