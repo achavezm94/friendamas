@@ -306,7 +306,7 @@ io.on('connection', (socket) => {
     const roomData = activeRooms.get(code);
     if (!roomData) return;
     await insertChat(roomData.room.id, socket.playerName || 'Unknown', text);
-    io.to(code).emit('chat_message', { from: socket.playerName || 'Unknown', text });
+    socket.to(code).emit('chat_message', { from: socket.playerName || 'Unknown', text });
   });
 
   socket.on('resign', async () => {
