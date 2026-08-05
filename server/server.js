@@ -178,9 +178,13 @@ async function deleteRoomByCode(code) {
   return dbRun('DELETE FROM rooms WHERE code = $1', [code]);
 }
 
-async function insertPlayer(roomId, socketId, name, color) {
-  return dbRun('INSERT INTO players (room_id, socket_id, name, color, connected) VALUES ($1, $2, $3, $4, 1)',
-    [roomId, socketId, name, color]);
+async function insertPlayer(roomId, socketId, name, color, userId) {
+  return dbRun('INSERT INTO players (room_id, socket_id, name, color, user_id, connected) VALUES ($1, $2, $3, $4, $5, 1)',
+    [roomId, socketId, name, color, userId || null]);
+}
+
+async function updatePlayerUser(playerId, userId) {
+  return dbRun('UPDATE players SET user_id = $1 WHERE id = $2', [userId || null, playerId]);
 }
 
 async function getPlayers(roomId) {
@@ -332,6 +336,24 @@ async function applyElo(winnerId, loserId, draw) {
   await insertMatch(loserId, winnerId, 'LOSS', newL - loser.elo);
 }
 
+async function endGameWithResult(code, winnerColor, reason) {
+  const roomData = activeRooms.get(code);
+  if (!roomData || roomData.room.status === 'finished') return;
+  roomData.room.status = 'finished';
+  await updateRoomStatus(code, 'finished');
+  const p = roomData.players;
+  if (p && p.length >= 2) {
+    const gold = p.find(x => x.color === 'GOLD');
+    const black = p.find(x => x.color === 'BLACK');
+    if (gold && black && gold.user_id && black.user_id) {
+      if (!winnerColor) await applyElo(gold.user_id, black.user_id, true);
+      else if (winnerColor === 'GOLD') await applyElo(gold.user_id, black.user_id, false);
+      else await applyElo(black.user_id, gold.user_id, false);
+    }
+  }
+  io.to(code).emit('game_end', { winner: winnerColor, reason });
+}
+
 // ─── In-memory cache ───
 const activeRooms = new Map();
 const userSocketCounts = new Map();
@@ -378,7 +400,7 @@ io.on('connection', async (socket) => {
     let code;
     do { code = generateCode(); } while (await getRoom(code));
     const roomId = await createRoom(code);
-    await insertPlayer(roomId, socket.id, playerName, 'GOLD');
+    await insertPlayer(roomId, socket.id, playerName, 'GOLD', socket.userId);
     socket.join(code);
     socket.roomCode = code;
     socket.playerName = playerName;
@@ -398,6 +420,7 @@ io.on('connection', async (socket) => {
     const existing = await findPlayer(code, name);
     if (existing && existing.connected === 0) {
       await updatePlayerSocket(socket.id, existing.id);
+      await updatePlayerUser(existing.id, socket.userId);
       socket.join(code);
       socket.roomCode = code;
       socket.playerName = name;
@@ -416,7 +439,7 @@ io.on('connection', async (socket) => {
     if (rd && rd.themeMap && rd.themeMap.GOLD === joinerTheme) {
       joinerTheme = -1;
     }
-    await insertPlayer(room.id, socket.id, name, 'BLACK');
+    await insertPlayer(room.id, socket.id, name, 'BLACK', socket.userId);
     await updateRoomStatus(code, 'playing');
     const updatedPlayers = await getPlayers(room.id);
     const entry = await loadRoomToCache(code);
@@ -435,6 +458,7 @@ io.on('connection', async (socket) => {
     const existing = await findPlayer(code, name);
     if (!existing) return callback({ error: 'No se encontró la sala o el nombre' });
     await updatePlayerSocket(socket.id, existing.id);
+    await updatePlayerUser(existing.id, socket.userId);
     const entry = await loadRoomToCache(code);
     if (!entry) return callback({ error: 'Error al cargar sala' });
     socket.join(code);
@@ -480,8 +504,10 @@ io.on('connection', async (socket) => {
   socket.on('resign', async () => {
     const code = socket.roomCode;
     if (!code) return;
-    await updateRoomStatus(code, 'finished');
-    io.to(code).emit('opponent_resigned');
+    const roomData = activeRooms.get(code);
+    const player = roomData && roomData.players.find(p => p.socket_id === socket.id);
+    const winnerColor = player ? (player.color === 'GOLD' ? 'BLACK' : 'GOLD') : null;
+    await endGameWithResult(code, winnerColor, 'resign');
   });
 
   socket.on('draw_offer', () => {
@@ -493,8 +519,21 @@ io.on('connection', async (socket) => {
   socket.on('draw_response', async (accept) => {
     const code = socket.roomCode;
     if (!code) return;
-    if (accept) await updateRoomStatus(code, 'finished');
-    io.to(code).emit('draw_response', { accept });
+    if (accept) await endGameWithResult(code, null, 'draw');
+    else socket.to(code).emit('draw_response', { accept: false });
+  });
+
+  socket.on('game_end', async ({ result, reason }) => {
+    const code = socket.roomCode;
+    if (!code) return;
+    const roomData = activeRooms.get(code);
+    const player = roomData && roomData.players.find(p => p.socket_id === socket.id);
+    const other = roomData && roomData.players.find(p => p.socket_id !== socket.id);
+    if (!player || !other) return;
+    let winnerColor = null;
+    if (result === 'WIN') winnerColor = player.color;
+    else if (result === 'LOSS') winnerColor = other.color;
+    await endGameWithResult(code, winnerColor, reason || 'win');
   });
 
   socket.on('coin_flip', () => {

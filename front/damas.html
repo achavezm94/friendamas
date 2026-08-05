@@ -1038,6 +1038,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
         const opp=turn===GOLD?BLACK:GOLD;
         if(!hm(board,opp)||cp(board,opp)===0){
           gameOver=true;gameActive=false;selected=null;validMoves=[];stopT();render();
+          if(gameModeOnline&&socket) socket.emit('game_end',{result:'WIN',reason:'win'});
           const w=turn===GOLD?(gameMode==='ai'?'Tú':gameMode==='online'?(myOnlineName||'Tú'):'Jugador 1'):(gameMode==='ai'?'Magnus_D':gameMode==='online'?onlineOpponentName:'Jugador 2');
           showToast('¡'+w+' gana!','La partida ha terminado','🏆',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);return;
         }
@@ -1087,7 +1088,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   }
 
   // ─── Timers ───
-  function startT(){if(gameMode==='ai'||timerInt)return;timerInt=setInterval(()=>{if(gameOver||!gameActive)return;if(turn===GOLD){playerSec--;if(playerSec<=0){playerSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Se te acabó el tiempo!','Perdiste por tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}else{opponentSec--;if(opponentSec<=0){opponentSec=0;gameOver=true;gameActive=false;stopT();render();showToast('¡Ganaste por tiempo!','El oponente se quedó sin tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}updateT();},1000);}
+  function startT(){if(gameMode==='ai'||timerInt)return;timerInt=setInterval(()=>{if(gameOver||!gameActive)return;if(turn===GOLD){playerSec--;if(playerSec<=0){playerSec=0;gameOver=true;gameActive=false;stopT();render();if(gameModeOnline&&socket) socket.emit('game_end',{result:myOnlineColor==='GOLD'?'LOSS':'WIN',reason:'timeout'});showToast('¡Se te acabó el tiempo!','Perdiste por tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}else{opponentSec--;if(opponentSec<=0){opponentSec=0;gameOver=true;gameActive=false;stopT();render();if(gameModeOnline&&socket) socket.emit('game_end',{result:myOnlineColor==='BLACK'?'LOSS':'WIN',reason:'timeout'});showToast('¡Ganaste por tiempo!','El oponente se quedó sin tiempo','⏰',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);}}updateT();},1000);}
   function stopT(){if(timerInt){clearInterval(timerInt);timerInt=null;}}
   function resetT(){if(!timerInt&&!gameOver)startT();}
   function updateT(){myTimer.textContent=`${String(Math.floor(playerSec/60)).padStart(2,'0')}:${String(playerSec%60).padStart(2,'0')}`;oppTimer.textContent=`${String(Math.floor(opponentSec/60)).padStart(2,'0')}:${String(opponentSec%60).padStart(2,'0')}`;}
@@ -1286,6 +1287,14 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     localStorage.removeItem('fd_token');
     setAuthUI();
     reconnectSocket();
+  }
+
+  function refreshAuthUser(){
+    if(!authToken) return;
+    fetch(API_BASE + '/api/auth/me', { headers: { Authorization: 'Bearer ' + authToken } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if(data && data.user){ authUser = data.user; setAuthUI(); } })
+      .catch(() => {});
   }
 
   async function openRanking(){
@@ -1514,15 +1523,26 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       stopT(); startT();
       if(data && data.themeMap && data.themeMap.BLACK !== undefined) p2Color = data.themeMap.BLACK;
     });
-    socket.on('opponent_resigned', () => {
-      gameOver = true; gameActive = false; stopT(); render();
-      showToast('¡Ganaste!','El oponente se rindió','🏆',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
-    });
     socket.on('draw_offer', () => {
       showToast('Tablas propuestas','Tu oponente ofrece tablas','🤝',[
-        {label:'Aceptar',primary:true,cb:()=>{ if(socket) socket.emit('draw_response',true); gameOver=true; gameActive=false; stopT(); render(); showToast('¡Tablas acordadas!','','🤝',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]); }},
+        {label:'Aceptar',primary:true,cb:()=>{ if(socket) socket.emit('draw_response',true); }},
         {label:'Rechazar',primary:false,cb:()=>{ if(socket) socket.emit('draw_response',false); }}
       ]);
+    });
+    socket.on('draw_response', (data) => {
+      if(data && data.accept === false) showToast('Tablas rechazadas','El oponente no aceptó las tablas','🤝');
+    });
+    socket.on('game_end', (data) => {
+      refreshAuthUser();
+      if(gameOver) return;
+      gameOver = true; gameActive = false; selected = null; validMoves = []; stopT(); render();
+      if(!data || data.winner === null || data.winner === undefined){
+        showToast('¡Tablas!','La partida terminó en empate','🤝',[{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
+        return;
+      }
+      const iWon = data.winner === myOnlineColor;
+      const sub = iWon ? (data.reason === 'resign' ? 'El oponente se rindió' : '¡Has ganado la partida!') : (data.reason === 'resign' ? 'Te rendiste' : 'El oponente ganó la partida');
+      showToast(iWon ? '¡Ganaste!' : 'Perdiste', sub, iWon ? '🏆' : '💔', [{label:'Nueva Partida',primary:true,cb:()=>openMenu()},{label:'Cerrar',primary:false,cb:()=>{}}]);
     });
     socket.on('chat_message', (data) => {
       addChatMessage(data.from, data.text);
