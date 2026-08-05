@@ -3,9 +3,14 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+const JWT_SECRET = process.env.JWT_SECRET || 'friendamas-dev-secret';
 
 const IS_RENDER = !!process.env.RENDER;
 if (!IS_RENDER) {
@@ -62,6 +67,34 @@ const SQL = {
       text TEXT NOT NULL,
       created_at ${DATABASE_URL ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'DATETIME DEFAULT CURRENT_TIMESTAMP'}
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id ${DATABASE_URL ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT'},
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      elo INTEGER DEFAULT 1200,
+      wins INTEGER DEFAULT 0,
+      losses INTEGER DEFAULT 0,
+      draws INTEGER DEFAULT 0,
+      online INTEGER DEFAULT 0,
+      created_at ${DATABASE_URL ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'DATETIME DEFAULT CURRENT_TIMESTAMP'}
+    );
+    CREATE TABLE IF NOT EXISTS matches (
+      id ${DATABASE_URL ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT'},
+      user_id INTEGER NOT NULL,
+      opponent_id INTEGER,
+      result TEXT NOT NULL,
+      rated INTEGER DEFAULT 1,
+      elo_change INTEGER DEFAULT 0,
+      created_at ${DATABASE_URL ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'DATETIME DEFAULT CURRENT_TIMESTAMP'}
+    );
+    CREATE TABLE IF NOT EXISTS friends (
+      id ${DATABASE_URL ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT'},
+      user_id INTEGER NOT NULL,
+      friend_id INTEGER NOT NULL,
+      status TEXT DEFAULT 'pending',
+      action_user INTEGER NOT NULL,
+      created_at ${DATABASE_URL ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'DATETIME DEFAULT CURRENT_TIMESTAMP'}
+    );
   `
 };
 
@@ -75,6 +108,7 @@ async function dbInit() {
     db.pragma('journal_mode = WAL');
   }
   await dbExec(SQL.CREATE_TABLES);
+  await dbExec(`ALTER TABLE players ADD COLUMN user_id INTEGER`).catch(() => {});
   console.log(`Database: ${DATABASE_URL ? `PostgreSQL (${DATABASE_URL.split('@')[1]?.split('/')[0] || 'remote'})` : 'SQLite (local)'}`);
 }
 
@@ -187,8 +221,120 @@ async function getChat(roomId) {
   return dbAll('SELECT * FROM chat_messages WHERE room_id = $1 ORDER BY id LIMIT 50', [roomId]);
 }
 
+// ─── Auth ───
+function signToken(userId) {
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '30d' });
+}
+
+function verifyToken(token) {
+  try { return jwt.verify(token, JWT_SECRET); } catch (e) { return null; }
+}
+
+async function hashPassword(password) {
+  return bcrypt.hash(password, 10);
+}
+
+function checkPassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
+function publicUser(u) {
+  return { id: u.id, username: u.username, elo: u.elo, wins: u.wins, losses: u.losses, draws: u.draws, online: u.online };
+}
+
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'No autorizado' });
+  req.userId = payload.id;
+  next();
+}
+
+// ─── User queries ───
+async function findUserByUsername(username) {
+  return dbGet('SELECT * FROM users WHERE username = $1', [username]);
+}
+
+async function findUserById(id) {
+  return dbGet('SELECT * FROM users WHERE id = $1', [id]);
+}
+
+async function createUser(username, passwordHash) {
+  return dbGet('INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id', [username, passwordHash]);
+}
+
+async function updateUserStats(userId, result, elo) {
+  if (result === 'WIN') return dbRun('UPDATE users SET elo = $1, wins = wins + 1 WHERE id = $2', [elo, userId]);
+  if (result === 'LOSS') return dbRun('UPDATE users SET elo = $1, losses = losses + 1 WHERE id = $2', [elo, userId]);
+  return dbRun('UPDATE users SET elo = $1, draws = draws + 1 WHERE id = $2', [elo, userId]);
+}
+
+async function insertMatch(userId, opponentId, result, eloChange) {
+  return dbRun('INSERT INTO matches (user_id, opponent_id, result, rated, elo_change) VALUES ($1, $2, $3, 1, $4)',
+    [userId, opponentId, result, eloChange]);
+}
+
+async function getRanking(limit) {
+  return dbAll('SELECT id, username, elo, wins, losses, draws FROM users ORDER BY elo DESC LIMIT $1', [limit || 50]);
+}
+
+async function getFriendRelations(userId) {
+  const mine = await dbAll('SELECT id, user_id, friend_id, status, action_user FROM friends WHERE user_id = $1', [userId]);
+  const theirs = await dbAll('SELECT id, user_id, friend_id, status, action_user FROM friends WHERE friend_id = $1', [userId]);
+  const rels = [];
+  for (const f of mine) rels.push({ frid: f.id, status: f.status, action_user: f.action_user, uid: f.friend_id });
+  for (const f of theirs) rels.push({ frid: f.id, status: f.status, action_user: f.action_user, uid: f.user_id });
+  const uids = [...new Set(rels.map(r => r.uid))];
+  const byId = {};
+  if (uids.length) {
+    const placeholders = uids.map((_, i) => `$${i + 1}`).join(',');
+    const users = await dbAll(`SELECT id, username, elo, online FROM users WHERE id IN (${placeholders})`, uids);
+    for (const u of users) byId[u.id] = u;
+  }
+  return rels.map(r => ({ ...r, username: byId[r.uid]?.username, elo: byId[r.uid]?.elo, online: byId[r.uid]?.online }));
+}
+
+// ─── Elo ───
+function eloExpectation(ra, rb) {
+  return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+}
+
+const ELO_K = 32;
+
+async function applyElo(winnerId, loserId, draw) {
+  if (!winnerId || !loserId) return;
+  const winner = await findUserById(winnerId);
+  const loser = await findUserById(loserId);
+  if (!winner || !loser) return;
+  if (draw) {
+    const eW = eloExpectation(winner.elo, loser.elo);
+    const eL = eloExpectation(loser.elo, winner.elo);
+    const deltaW = Math.round(ELO_K * (0.5 - eW));
+    const deltaL = Math.round(ELO_K * (0.5 - eL));
+    const newW = Math.max(100, winner.elo + deltaW);
+    const newL = Math.max(100, loser.elo + deltaL);
+    await updateUserStats(winnerId, 'DRAW', newW);
+    await updateUserStats(loserId, 'DRAW', newL);
+    await insertMatch(winnerId, loserId, 'DRAW', newW - winner.elo);
+    await insertMatch(loserId, winnerId, 'DRAW', newL - loser.elo);
+    return;
+  }
+  const eW = eloExpectation(winner.elo, loser.elo);
+  const eL = eloExpectation(loser.elo, winner.elo);
+  const deltaW = Math.round(ELO_K * (1 - eW));
+  const deltaL = Math.round(ELO_K * (0 - eL));
+  const newW = Math.max(100, winner.elo + deltaW);
+  const newL = Math.max(100, loser.elo + deltaL);
+  await updateUserStats(winnerId, 'WIN', newW);
+  await updateUserStats(loserId, 'LOSS', newL);
+  await insertMatch(winnerId, loserId, 'WIN', newW - winner.elo);
+  await insertMatch(loserId, winnerId, 'LOSS', newL - loser.elo);
+}
+
 // ─── In-memory cache ───
 const activeRooms = new Map();
+const userSocketCounts = new Map();
 
 async function loadRoomToCache(code) {
   const room = await getRoom(code);
@@ -210,8 +356,23 @@ function generateCode() {
 }
 
 // ─── Socket.io ───
-io.on('connection', (socket) => {
-  console.log('Conectado:', socket.id);
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth && socket.handshake.auth.token;
+    if (token) {
+      const payload = verifyToken(token);
+      if (payload) socket.userId = payload.id;
+    }
+  } catch (e) { /* invitados siguen adelante */ }
+  next();
+});
+
+io.on('connection', async (socket) => {
+  console.log('Conectado:', socket.id, socket.userId ? `(user ${socket.userId})` : '(guest)');
+  if (socket.userId) {
+    userSocketCounts.set(socket.userId, (userSocketCounts.get(socket.userId) || 0) + 1);
+    await dbRun('UPDATE users SET online = 1 WHERE id = $1', [socket.userId]);
+  }
 
   socket.on('create_room', async ({ playerName, p1Color }, callback) => {
     let code;
@@ -390,6 +551,15 @@ io.on('connection', (socket) => {
   socket.on('disconnect', async () => {
     const code = socket.roomCode;
     console.log('Desconectado:', socket.id, 'Sala:', code);
+    if (socket.userId) {
+      const count = (userSocketCounts.get(socket.userId) || 1) - 1;
+      if (count <= 0) {
+        userSocketCounts.delete(socket.userId);
+        await dbRun('UPDATE users SET online = 0 WHERE id = $1', [socket.userId]);
+      } else {
+        userSocketCounts.set(socket.userId, count);
+      }
+    }
     if (code) {
       await setPlayerOffline(socket.id);
       const roomData = activeRooms.get(code);
@@ -413,6 +583,104 @@ io.on('connection', (socket) => {
       socket.to(code).emit('opponent_disconnected');
     }
   });
+});
+
+// ─── REST API ───
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+    if (username.length < 3 || username.length > 16) return res.status(400).json({ error: 'El usuario debe tener entre 3 y 16 caracteres' });
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'Solo letras, números y guion bajo' });
+    if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const existing = await findUserByUsername(username);
+    if (existing) return res.status(409).json({ error: 'El nombre de usuario ya está en uso' });
+    const hash = await hashPassword(password);
+    const created = await createUser(username, hash);
+    const user = await findUserById(created.id);
+    const token = signToken(user.id);
+    res.json({ token, user: publicUser(user) });
+  } catch (e) {
+    console.error('register error:', e);
+    res.status(500).json({ error: 'Error al registrar' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+    const user = await findUserByUsername(username);
+    if (!user || !(await checkPassword(password, user.password_hash))) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    const token = signToken(user.id);
+    res.json({ token, user: publicUser(user) });
+  } catch (e) {
+    console.error('login error:', e);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  const user = await findUserById(req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({ user: publicUser(user) });
+});
+
+app.get('/api/ranking', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const rows = await getRanking(limit);
+    res.json({ ranking: rows.map((r, i) => ({ rank: i + 1, ...r })) });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al obtener ranking' });
+  }
+});
+
+app.get('/api/profile/:username', async (req, res) => {
+  try {
+    const user = await findUserByUsername(req.params.username);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const recent = await dbAll('SELECT * FROM matches WHERE user_id = $1 ORDER BY id DESC LIMIT 10', [user.id]);
+    res.json({ user: publicUser(user), recent });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al obtener perfil' });
+  }
+});
+
+app.get('/api/friends', requireAuth, async (req, res) => {
+  const relations = await getFriendRelations(req.userId);
+  const active = relations.filter(r => r.status === 'active').map(r => ({ id: r.uid, username: r.username, elo: r.elo, online: r.online }));
+  const pendingOut = relations.filter(r => r.status === 'pending' && r.action_user === req.userId).map(r => r.uid);
+  const pendingIn = relations.filter(r => r.status === 'pending' && r.action_user !== req.userId).map(r => ({ id: r.uid, username: r.username, elo: r.elo, online: r.online }));
+  res.json({ friends: active, pendingIn, pendingOut });
+});
+
+app.post('/api/friends/request', requireAuth, async (req, res) => {
+  const username = String(req.body.username || '').trim();
+  const target = await findUserByUsername(username);
+  if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (target.id === req.userId) return res.status(400).json({ error: 'No puedes agregarte a ti mismo' });
+  const relations = await getFriendRelations(req.userId);
+  const exists = relations.find(r => r.uid === target.id);
+  if (exists) {
+    if (exists.status === 'active') return res.status(409).json({ error: 'Ya son amigos' });
+    return res.status(409).json({ error: 'La solicitud ya existe' });
+  }
+  await dbRun('INSERT INTO friends (user_id, friend_id, status, action_user) VALUES ($1, $2, \'pending\', $3)', [req.userId, target.id, req.userId]);
+  res.json({ ok: true });
+});
+
+app.post('/api/friends/accept', requireAuth, async (req, res) => {
+  const friendId = parseInt(req.body.friendId);
+  const result = await dbRun('UPDATE friends SET status = \'active\' WHERE status = \'pending\' AND action_user = $1 AND friend_id = $2', [friendId, req.userId]);
+  if (DATABASE_URL) {
+    if (!result.rowCount) return res.status(404).json({ error: 'Solicitud no encontrada' });
+  } else {
+    if (result.changes === 0) return res.status(404).json({ error: 'Solicitud no encontrada' });
+  }
+  res.json({ ok: true });
 });
 
 // ─── Start ───

@@ -32,16 +32,42 @@ Doble motor vía `DATABASE_URL`:
 - Si no → **SQLite** local (`better-sqlite3`, archivo `server/game.db`)
 - `dbSql()` (`server.js:78-80`) convierte `$N` → `?` para SQLite — **usarlo siempre** en queries
 
-### Esquema (server.js:24-63)
+### Esquema (server.js:24-80)
 - `rooms`: id, code (único 6 chars), status (waiting/playing/finished), turn (GOLD/BLACK), board_state (JSON string), gold_captured/black_captured (JSON), **gold_time/black_time** (segundos restantes), created_at
-- `players`: id, room_id, socket_id, name, color (GOLD/BLACK), connected (0/1)
+- `players`: id, room_id, socket_id, name, color (GOLD/BLACK), connected (0/1), **user_id** (nullable, se añade con ALTER en `dbInit`)
 - `moves`: historial de jugadas (from_row/from_col/to_row/to_col/captures)
 - `chat_messages`: historial de chat
+- `users`: id, username (único), password_hash (bcrypt), elo (default 1200), wins/losses/draws, online (0/1), created_at
+- `matches`: id, user_id, opponent_id, result (WIN/LOSS/DRAW), rated, elo_change, created_at — historial por jugador
+- `friends`: id, user_id, friend_id, status (pending/active), action_user, created_at — relación par
+
+**IMPORTANTE**: el adaptador SQLite (`dbSql`) convierte cada `$N` → `?`, así que **cada `$N` se usa UNA sola vez** por query (reutilizar `$1` rompe en SQLite; no usar `CASE WHEN f.user_id = $1 THEN ... $1`).
+
+## Autenticación y REST API (server.js)
+
+- **JWT** (`jsonwebtoken`) + **bcryptjs** (sin compilación nativa). `JWT_SECRET` env (default dev). Token expira en 30 días.
+- `signToken(userId)` / `verifyToken(token)` / `requireAuth` (lee `Authorization: Bearer <token>`).
+- **Socket.IO**: middleware `io.use()` lee `socket.handshake.auth.token`, asigna `socket.userId`. Presencia: `userSocketCounts` (Map) cuenta sockets por user; `users.online` = 1/0. Invitados (sin token) siguen jugando normal.
+- `publicUser(u)`: `{id, username, elo, wins, losses, draws, online}`
+- Elo: `eloExpectation()` + `ELO_K=32`, `applyElo(winnerId, loserId, draw)` actualiza `users` e inserta en `matches`.
+
+| Endpoint | Auth | Función |
+|----------|------|---------|
+| `POST /api/auth/register` | no | `{username, password}` → `{token, user}`; username 3-16 chars `[a-zA-Z0-9_]`, pass ≥6 |
+| `POST /api/auth/login` | no | `{username, password}` → `{token, user}` |
+| `GET /api/auth/me` | sí | perfil actual |
+| `GET /api/ranking?limit=50` | no | leaderboard por elo desc |
+| `GET /api/profile/:username` | no | stats + últimas 10 partidas |
+| `GET /api/friends` | sí | `{friends, pendingIn, pendingOut}` con presencia |
+| `POST /api/friends/request` | sí | `{username}` → crea solicitud |
+| `POST /api/friends/accept` | sí | `{friendId}` → acepta solicitud entrante |
 
 ### Cache en memoria
-`activeRooms` (Map, `server.js:184-198`) guarda `{ room, players, code, themeMap }`.
+`activeRooms` (Map, `server.js:184-198`) guarda `{ room, players, code, themeMap, themesBySocket }`.
 - `themeMap = { GOLD: índiceTema, BLACK: índiceTema }` — colores elegidos por cada jugador
-- `loadRoomToCache()` preserva `themeMap` existente
+- `themesBySocket = { [socketId]: índiceTema }` — tema de cada jugador para reconstruir `themeMap` tras el swap de colores de la moneda
+- Estado de moneda: `coinState = { callerSocketId }` y `coinWinnerSocketId` (se limpian en `disconnect`)
+- `loadRoomToCache()` preserva `themeMap` y `themesBySocket` existentes
 - `-1` como índice de tema = forzar color default (blanco/negro según modo claro/oscuro)
 
 ## Handlers Socket.IO (server.js)
