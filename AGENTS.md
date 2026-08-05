@@ -82,7 +82,18 @@ Doble motor vía `DATABASE_URL`:
 | `coin_call` | `{call: 'cara'\|'sello'}` | lanza moneda, emite `coin_result` con ganador |
 | `coin_choice` | `{start: bool}` | el ganador decide quién es GOLD, actualiza colores + themeMap, emite `game_start` |
 | `resign` / `draw_offer` / `draw_response` | | fin de partida / tablas |
+| `game_end` | `{result, reason}` | el cliente reporta fin por captura o tiempo (`result`: WIN/LOSS desde su perspectiva); el server determina color ganador |
 | `disconnect` | | marca offline, limpia estado de moneda (emite `coin_cancel`), elimina sala si nadie conectado tras 5 min |
+
+### Elo al terminar partidas (server)
+- `players.user_id` se linkea al crear/entrar/reconectar sala (vía `socket.userId` del token JWT)
+- `endGameWithResult(code, winnerColor, reason)` (`server.js`): marca sala `finished`, y si **ambos** jugadores tienen `user_id` aplica Elo (draw si `winnerColor` null). Emite `game_end {winner, reason}` a todos en la sala (guard `room.status==='finished'` evita doble aplicación)
+- El cliente termina así:
+  - **Resign**: `socket.emit('resign')` → server emite `game_end` (ya no existe `opponent_resigned`)
+  - **Tablas**: el aceptador emite `draw_response,true` → server emite `game_end {winner:null}`
+  - **Captura/sin movimientos**: el ganador emite `game_end {result:'WIN'}`
+  - **Tiempo**: el cliente cuyo reloj llega a 0 emite `game_end` con `result` según su color (loserColor === myOnlineColor ? 'LOSS' : 'WIN')
+- Cliente: handler único `game_end` — guarda `if(gameOver) return` (el ganador local ya cerró), muestra toast según `winner` vs `myOnlineColor`, y llama `refreshAuthUser()` (re-fetch `/api/auth/me` → `setAuthUI()` actualiza header + sidebar con el nuevo ELO)
 
 ## Frontend — Conceptos clave (front/damas.html)
 
