@@ -6,11 +6,14 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
-app.use(express.static(path.join(__dirname, '..', 'front')));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'front', 'damas.html'));
-});
+const IS_RENDER = !!process.env.RENDER;
+if (!IS_RENDER) {
+  app.use(express.static(path.join(__dirname, '..', 'front')));
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'front', 'damas.html'));
+  });
+}
 
 const server = http.createServer(app);
 const io = new Server(server, {
