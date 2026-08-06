@@ -287,16 +287,29 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
 /* ─── Online mode ─── */
 .online-setup{display:flex;flex-direction:column;gap:12px;padding:10px 0;width:100%}
-.auth-sec{display:flex;flex-direction:column;gap:10px;padding:10px 0;width:100%;border-top:1px solid var(--border);margin-top:2px}
-.auth-tabs{display:flex;gap:8px}
-.auth-tabs .btn-sgh{flex:1;font-size:12px;padding:8px 6px}
-.auth-tabs .btn-sgh.act{background:rgba(255,215,0,0.12);border-color:var(--gold);color:var(--gold)}
-.auth-fields{display:flex;flex-direction:column;gap:8px}
-.auth-err{font-size:12px;color:#ff6b6b;text-align:center}.auth-user{display:flex;align-items:center;gap:10px;width:100%}
-.auth-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(135deg,#c9a227,#f2ca50);color:#1a1a2e;flex-shrink:0}
+.auth-w{position:relative;display:flex;align-items:center;flex-shrink:0;margin-right:2px}
+.auth-trigger{display:flex;align-items:center;gap:6px;background:rgba(242,202,80,0.12);border:1px solid var(--gold);color:var(--gold);font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;transition:background .2s;white-space:nowrap;font-family:inherit}
+.auth-trigger:hover{background:rgba(242,202,80,0.2)}
+.auth-trigger .material-symbols-outlined{font-size:16px}
+.auth-pop{position:absolute;top:calc(100% + 10px);right:0;width:270px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,0.35);padding:14px;display:flex;flex-direction:column;gap:9px;z-index:80}
+.auth-pop::before{content:'';position:absolute;top:-6px;right:24px;width:10px;height:10px;background:var(--surface);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg)}
+.auth-pop input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;width:100%;box-sizing:border-box}
+.auth-pop input:focus{border-color:var(--gold)}
+.auth-tabs{display:flex;gap:6px}
+.auth-tab{flex:1;font-size:11px;padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit}
+.auth-tab.act{background:rgba(242,202,80,0.12);border-color:var(--gold);color:var(--gold)}
+.auth-err{font-size:11px;color:#ff6b6b;text-align:center}
+.auth-submit{width:100%;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#1a1a2e;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit}
+.auth-submit:disabled{opacity:.6;cursor:default}
+.auth-user{display:flex;align-items:center;gap:8px;padding:3px 6px 3px 3px;background:var(--surface);border:1px solid var(--border);border-radius:999px;max-width:200px}
+.auth-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(135deg,#c9a227,#f2ca50);color:#1a1a2e;flex-shrink:0}
 .auth-ui{flex:1;min-width:0}
-.auth-un{font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.auth-e{font-size:11px;color:var(--gold)}
+.auth-un{font-weight:700;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auth-e{font-size:10px;color:var(--gold)}
+.auth-logout{width:24px;height:24px;border-radius:50%;border:none;background:rgba(255,255,255,0.06);color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.auth-logout:hover{color:#ff6b6b}
+.hdr-g{display:flex;align-items:center;gap:4px}
+@media(max-width:520px){.auth-trigger-label{display:none}.auth-trigger{padding:6px 8px}.auth-user{max-width:120px}.auth-pop{width:240px;right:-8px}}
 .online-setup input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;text-align:center}
 .online-setup input:focus{border-color:var(--gold)}
 .online-setup input.code-input{letter-spacing:2px;text-transform:uppercase}
@@ -327,12 +340,32 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 <header class="hdr">
   <div class="hdr-title">♛ FrienDamas</div>
   <nav><a href="#">Play</a><a href="#">Tournaments</a><a href="#" id="navRanking">Rankings</a></nav>
-  <div class="hdr-r">
+  <div class="hdr-g">
+    <div class="auth-w" id="authSection">
+      <button class="auth-trigger" id="btnAuthOpen"><span class="material-symbols-outlined">account_circle</span><span class="auth-trigger-label">Iniciar sesión</span></button>
+      <div class="auth-pop" id="authLoginForm" style="display:none">
+        <div class="auth-tabs">
+          <button class="auth-tab act" id="btnAuthLoginTab">Iniciar sesión</button>
+          <button class="auth-tab" id="btnAuthRegisterTab">Registrarse</button>
+        </div>
+        <input type="text" id="authUsername" placeholder="Usuario" maxlength="16" autocomplete="username">
+        <input type="password" id="authPassword" placeholder="Contraseña (mín. 6)" maxlength="72" autocomplete="current-password">
+        <button class="auth-submit" id="btnAuthSubmit">Iniciar sesión</button>
+        <div class="auth-err" id="authError" style="display:none"></div>
+      </div>
+      <div class="auth-user" id="authUserBar" style="display:none">
+        <div class="auth-av">♛</div>
+        <div class="auth-ui"><div class="auth-un" id="authUsernameLabel">-</div><div class="auth-e" id="authEloLabel">ELO 1200</div></div>
+        <button class="auth-logout" id="btnAuthLogout" title="Cerrar sesión">✕</button>
+      </div>
+    </div>
+    <div class="hdr-r">
     <button id="chatToggleHdr" class="hdr-btn" title="Chat"><span class="material-symbols-outlined">chat</span></button>
     <button id="themeToggle" class="hdr-btn" title="Modo claro/oscuro"><span class="material-symbols-outlined">dark_mode</span></button>
     <button id="helpBtn" class="hdr-btn" title="Reglas"><span class="material-symbols-outlined">help</span></button>
     <button id="hamburgerBtn" class="hdr-btn hdr-hamburger" title="Menú"><span class="material-symbols-outlined">menu</span></button>
     <div class="av-sm"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAthasyUToSqU5uEaKScwEf4jZ_6wX_MCWvhA0qv3eMHGm1PZRnkOuyW3WH7ySxdMhK2Lia6QhLOCi4N7w6DxXeoYRmjj5kgV6ruIfbDVQuzcy7q7zxBym9GIvp3ZspjX34SWhRU1sgFtLJqw9YDoxZUk8i30RGzKLXOXFiuv8fv1OmUwik-tewKkrAf59HIDnA4FkbZQO7Jly500ORs6VhLSJnq-M9XCULBbI1lllgLIMS5oSzwgVT4A"/></div>
+  </div>
   </div>
 </header>
 <div class="app">
@@ -355,25 +388,6 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
       <div class="menu-card">
         <div class="m-icon"><span class="material-symbols-outlined" style="font-variation-settings:'FILL'1;font-size:32px">check</span></div>
         <div>    <div class="m-title">FrienDamas</div><div class="m-sub">Configura tu partida</div></div>
-        <div class="auth-sec" id="authSection" style="display:none">
-          <div id="authLoginForm">
-            <div class="auth-tabs">
-              <button class="btn-sgh act" id="btnAuthLoginTab">Iniciar sesión</button>
-              <button class="btn-sgh" id="btnAuthRegisterTab">Registrarse</button>
-            </div>
-            <div class="auth-fields">
-              <input type="text" id="authUsername" class="name-input" placeholder="Usuario" maxlength="16" autocomplete="username">
-              <input type="password" id="authPassword" class="name-input" placeholder="Contraseña (mín. 6)" maxlength="72" autocomplete="current-password">
-            </div>
-            <button class="btn-sbg" id="btnAuthSubmit">Iniciar sesión</button>
-            <div class="auth-err" id="authError" style="display:none"></div>
-          </div>
-          <div class="auth-user" id="authUserBar" style="display:none">
-            <div class="auth-av">♛</div>
-            <div class="auth-ui"><div class="auth-un" id="authUsernameLabel">-</div><div class="auth-e" id="authEloLabel">ELO 1200</div></div>
-            <button class="btn-sgh" id="btnAuthLogout">Salir</button>
-          </div>
-        </div>
         <div class="mode-grp">
           <div class="mode-b act" data-mode="ai" id="modeAI"><div class="mode-b-icon">🤖</div><div class="mode-b-l">vs IA</div><div class="mode-b-d">Juega contra la computadora</div></div>
           <div class="mode-b" data-mode="local" id="modeLocal"><div class="mode-b-icon">👥</div><div class="mode-b-l">2 Jugadores</div><div class="mode-b-d">Comparte el mismo dispositivo</div></div>
@@ -627,6 +641,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
   const reconnectNameInput = document.getElementById('reconnectNameInput');
   const btnReconnect = document.getElementById('btnReconnect');
   const authSection = document.getElementById('authSection');
+  const btnAuthOpen = document.getElementById('btnAuthOpen');
   const authLoginForm = document.getElementById('authLoginForm');
   const authUserBar = document.getElementById('authUserBar');
   const authUsername = document.getElementById('authUsername');
@@ -1199,24 +1214,29 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
     if(span) span.textContent = text;
   }
 
+  function updateAuthTabs(){
+    btnAuthSubmit.textContent = authMode === 'register' ? 'Registrarse' : 'Iniciar sesión';
+    btnAuthLoginTab.classList.toggle('act', authMode === 'login');
+    btnAuthRegisterTab.classList.toggle('act', authMode === 'register');
+  }
+
   function setAuthUI(){
-    authSection.style.display = 'flex';
     if(authUser){
-      authLoginForm.style.display = 'none';
       authUserBar.style.display = 'flex';
+      btnAuthOpen.style.display = 'none';
+      authLoginForm.style.display = 'none';
       authUsernameLabel.textContent = authUser.username;
       authEloLabel.textContent = 'ELO ' + authUser.elo;
       sbName.textContent = authUser.username;
       sbElo.textContent = 'ELO ' + authUser.elo;
     } else {
-      authLoginForm.style.display = 'flex';
       authUserBar.style.display = 'none';
+      btnAuthOpen.style.display = 'flex';
+      authLoginForm.style.display = 'none';
       authError.style.display = 'none';
       sbName.textContent = 'FrienDamas';
       sbElo.textContent = 'ELO 2150';
-      btnAuthSubmit.textContent = authMode === 'register' ? 'Registrarse' : 'Iniciar sesión';
-      btnAuthLoginTab.classList.toggle('act', authMode === 'login');
-      btnAuthRegisterTab.classList.toggle('act', authMode === 'register');
+      updateAuthTabs();
     }
   }
 
@@ -1675,8 +1695,10 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);hei
 
     // Auth
     restoreSession();
-    btnAuthLoginTab.addEventListener('click',()=>{ authMode='login'; setAuthUI(); });
-    btnAuthRegisterTab.addEventListener('click',()=>{ authMode='register'; setAuthUI(); });
+    btnAuthOpen.addEventListener('click',(e)=>{ e.stopPropagation(); authLoginForm.style.display = authLoginForm.style.display === 'flex' ? 'none' : 'flex'; });
+    document.addEventListener('click',(e)=>{ if(!authLoginForm.contains(e.target) && !btnAuthOpen.contains(e.target)) authLoginForm.style.display='none'; });
+    btnAuthLoginTab.addEventListener('click',()=>{ authMode='login'; updateAuthTabs(); });
+    btnAuthRegisterTab.addEventListener('click',()=>{ authMode='register'; updateAuthTabs(); });
     btnAuthSubmit.addEventListener('click',authSubmit);
     btnAuthLogout.addEventListener('click',logout);
     authPassword.addEventListener('keydown',(e)=>{ if(e.key==='Enter') authSubmit(); });
